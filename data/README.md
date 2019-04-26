@@ -33,3 +33,12 @@ Intro: https://www.yf.io/p/lsun
 https://drive.google.com/drive/folders/0B4qLcYyJmiz0TXY1NG02bzZVRGs
 
 1024*1024
+
+## [SVHN](http://ufldl.stanford.edu/housenumbers/nips2011_housenumbers.pdf)
+http://ufldl.stanford.edu/housenumbers/
+
+MNIST like 32*32
+
+10 classes: 73257 digits for training, 26032 digits for testing, and 531131 additional, somewhat less difficult samples, to use as extra training data
+
+Comes in two formats
