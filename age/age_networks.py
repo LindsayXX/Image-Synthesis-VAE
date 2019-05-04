@@ -78,7 +78,7 @@ def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
         nn.BatchNorm2d(ngf * 2),
         nn.ReLU(True),
 
-        nn.Conv2d(ngf * 2, nc, 1, bias=True),
+        nn.Conv2d(ngf * 2, num_col, 1, bias=True),
         nn.Tanh())
         # Output num_col x 32 x 32
     elif im_dim==128:
