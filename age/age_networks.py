@@ -4,13 +4,13 @@ import torch.nn.functional as F
 
 class Age_Net(nn.Module):
     def __init__(self, net, sphere):
-        super(Net, self).__init__()
+        super(Age_Net, self).__init__()
         self.net = net
         self.sphere = sphere
 
     def forward(self, input):
-        output = net(input)
-        if sphere:
+        output = self.net(input)
+        if self.sphere:
             pass # normalize
         return output
 
@@ -56,7 +56,7 @@ def age_enc(im_dim=32, num_col=3, z_dim=128, ndf=64, sphere=True):
 
         nn.Conv2d(ndf * 16, z_dim, 4, 1, 0, bias=True))
         # Output z_dim x 1 x 1
-    return Net(net, sphere)
+    return Age_Net(net, sphere)
 
 def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
     if im_dim==32:
@@ -107,7 +107,7 @@ def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
         nn.ConvTranspose2d(ngf, num_col, 4, 2, 1, bias=False),
         nn.Tanh())
         # Output num_col x 128 x 128
-    return Net(net)
+    return Age_Net(net)
 
 
 
