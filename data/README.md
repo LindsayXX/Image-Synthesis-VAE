@@ -5,6 +5,8 @@ https://tiny-imagenet.herokuapp.com/
 
 Label Classes and Bounding Boxes are provided. 
 
+downsampled to 64 * 64
+
 
 ## [Stanford Cars dataset](http://vision.stanford.edu/pdf/3drr13.pdf)
 https://ai.stanford.edu/~jkrause/cars/car_dataset.html
