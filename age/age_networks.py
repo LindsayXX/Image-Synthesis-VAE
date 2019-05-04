@@ -107,7 +107,7 @@ def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
         nn.ConvTranspose2d(ngf, num_col, 4, 2, 1, bias=False),
         nn.Tanh())
         # Output num_col x 128 x 128
-    return Age_Net(net)
+    return Age_Net(net, sphere=False)
 
 
 

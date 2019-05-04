@@ -15,8 +15,8 @@ class KL_Loss_AGE(nn.Module):
         # Input normalized z
         self.M = list(z.size())[1] # size of latent space
         self.mean = z.mean(0)
-        self.var = torch.var(z, False)
-        kl_loss = -self.M/2 + ((self.mean.pow(2) + self.var.pow(2))/2 - (self.var.sqrt).log).sum
+        self.var = z.var(0, unbiased=False)
+        kl_loss = -self.M/2 + ((self.mean.pow(2) + self.var.pow(2))/2 - self.var.sqrt().log()).sum()
 
         if not self.minimize:
             kl_loss *= -1
