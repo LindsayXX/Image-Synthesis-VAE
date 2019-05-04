@@ -15,7 +15,7 @@ from tools import *
 if __name__ == '__main__':
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
@@ -25,8 +25,9 @@ if __name__ == '__main__':
     #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    NUM_EPOCH = 5
+    NUM_EPOCH = 20
     REC_LAMBDA = 1000
+    REC_MU = 10
     Z_DIM = 128
 
     cudnn.benchmark = True
@@ -55,6 +56,9 @@ if __name__ == '__main__':
 
             z = age_E(x)
             loss_E.append(KL_min(z))
+
+            x_rec = age_G(z)
+            loss_E.append(REC_MU*loss_l1(x, x_rec))
 
             z_sample = sampling(batch_size, Z_DIM).cuda()
             x_fake = age_G(z_sample).detach()
