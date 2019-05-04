@@ -4,15 +4,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def normalize():
-    #TODO normalize M-dim z to sphere
-    return 0
+def normalize(z):
+    # normalize M-dim z to a sphere
+    # dim 1 is the batch size
+    z.div(z.norm(2, dim=1).expand_as(z))
 
-def z_sample():
-    # TODO sample z
+    return z
+
+def sampling(batch_size, z_dim, sphere=True):
+    samples = torch.randn(batch_size, z_dim)
+    if sphere:
+        samples = normalize(samples)
+
+    return samples
 
 def im_gen():
     #TODO generate images given model
+
     return 0
 
 def im_show(img):
