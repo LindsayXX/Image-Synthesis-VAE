@@ -13,6 +13,7 @@ import os
 
 root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 model_dir = os.path.join(root_dir, 'age_model_cifar')
+plot_dir = os.path.join(root_dir, 'age_plot_cifar')
 
 if __name__ == '__main__':
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -116,35 +117,36 @@ if __name__ == '__main__':
 
                 #print(f'Generator: KL fake z - {KL_z_fake}, Rec z loss - {z_rec_loss}')
 
-    plt.plot(enc_z, label='Encoder KL z')
-    plt.plot(enc_fake_z, label='Encoder KL fake z')
-    plt.legend()
-    plt.show()
-    plt.plot(gen_fake_z, label='Generator KL fake z')
-    plt.legend()
-    plt.show()
-    plt.plot(enc_rec_x, label='Encoder x recon')
-    plt.legend()
-    plt.show()
-    plt.plot(gen_rec_z, label='Generator z recon')
-    plt.legend()
-    plt.show()
+    # plt.plot(enc_z, label='Encoder KL z')
+    # plt.plot(enc_fake_z, label='Encoder KL fake z')
+    # plt.legend()
+    # plt.savefig()
+    # #plt.show()
+    # plt.plot(gen_fake_z, label='Generator KL fake z')
+    # plt.legend()
+    # plt.show()
+    # plt.plot(enc_rec_x, label='Encoder x recon')
+    # plt.legend()
+    # plt.show()
+    # plt.plot(gen_rec_z, label='Generator z recon')
+    # plt.legend()
+    # plt.show()
 
-    with torch.no_grad():
-        for i in range(5):
-            z_sample = sampling(1, Z_DIM).cuda()
-            x_fake = age_G(z_sample).view(3, 32, 32).cpu()
-            im_show(x_fake)
-        recon_i = 0
-        for i, data in enumerate(trainloader,0):
-            x, label = data
-            x = x[0].view(1, 3, 32, 32).cuda()
-            z = age_E(x)
-            x_rec = age_G(z).view(3, 32, 32).cpu()
-            im_show(x.view(3, 32, 32).cpu())
-            im_show(x_rec)
-            recon_i += 1
-            if recon_i == 5:
-                break
+    # with torch.no_grad():
+    #     for i in range(5):
+    #         z_sample = sampling(1, Z_DIM).cuda()
+    #         x_fake = age_G(z_sample).view(3, 32, 32).cpu()
+    #         im_show(x_fake)
+    #     recon_i = 0
+    #     for i, data in enumerate(trainloader,0):
+    #         x, label = data
+    #         x = x[0].view(1, 3, 32, 32).cuda()
+    #         z = age_E(x)
+    #         x_rec = age_G(z).view(3, 32, 32).cpu()
+    #         im_show(x.view(3, 32, 32).cpu())
+    #         im_show(x_rec)
+    #         recon_i += 1
+    #         if recon_i == 5:
+    #             break
 
 
