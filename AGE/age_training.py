@@ -8,11 +8,16 @@ import torch.backends.cudnn as cudnn
 from AGE.age_networks import *
 from AGE.loss_functions import *
 from AGE.tools import *
+import sys
+import os
+
+root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+model_dir = os.path.join(root_dir, 'age_model_cifar')
 
 if __name__ == '__main__':
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-    trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
@@ -56,6 +61,8 @@ if __name__ == '__main__':
 
             for param_group in age_optim_G.param_groups:
                 param_group['lr'] = LR
+            torch.save(age_E.state_dict(), f"{model_dir}/encoder_{epoch}")
+            torch.save(age_G.state_dict(), f"{model_dir}/generator_{epoch}")
         for i, data in enumerate(trainloader, 0):
             #print(f'Epoch: {epoch+1}, Batch: i+1')
             #print('--------------------------------')
