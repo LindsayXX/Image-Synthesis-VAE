@@ -1,16 +1,13 @@
-import matplotlib.pyplot as plt
-import numpy as np
 from tqdm import tqdm
 
-import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torch.utils.data as data
 import torch.backends.cudnn as cudnn
-from age_networks import *
-from loss_functions import *
-from tools import *
+from AGE.age_networks import *
+from AGE.loss_functions import *
+from AGE.tools import *
 
 if __name__ == '__main__':
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
