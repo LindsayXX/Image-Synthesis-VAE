@@ -1,5 +1,6 @@
 from tqdm import tqdm
 
+import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
@@ -21,6 +22,11 @@ model_dir = os.path.join(root_dir, 'age_model_cifar')
 plot_dir = os.path.join(root_dir, 'age_plot_cifar')
 
 if __name__ == '__main__':
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(torch.cuda.current_device())
+    print(torch.cuda.device(0))
+    print(torch.cuda.device_count())
+    print(torch.cuda.get_device_name(0))
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
     #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
@@ -40,15 +46,15 @@ if __name__ == '__main__':
     DROP_LR = 40
     LR = 0.0002
 
-    age_E = age_enc(z_dim=Z_DIM).cuda()
-    age_G = age_gen(z_dim=Z_DIM).cuda()
+    age_E = age_enc(z_dim=Z_DIM).to(device)
+    age_G = age_gen(z_dim=Z_DIM).to(device)
     age_E.apply(weights_init)
     age_G.apply(weights_init)
     age_E.train()
     age_G.train()
 
-    x = torch.FloatTensor(64, 3, 32, 32).cuda()
-    z_sample = torch.FloatTensor(64, Z_DIM, 1, 1).cuda()
+    x = torch.FloatTensor(64, 3, 32, 32).to(device)
+    z_sample = torch.FloatTensor(64, Z_DIM, 1, 1).to(device)
     x = Variable(x)
     z_sample = Variable(z_sample)
 
