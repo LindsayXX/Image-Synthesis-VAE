@@ -23,10 +23,12 @@ plot_dir = os.path.join(root_dir, 'age_plot_cifar')
 
 if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(torch.cuda.current_device())
-    print(torch.cuda.device(0))
-    print(torch.cuda.device_count())
-    print(torch.cuda.get_device_name(0))
+    print(f'Cuda available: {torch.cuda.is_available()}')
+    print(f'Current device number: {torch.cuda.current_device()}')
+    print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
+    print(f'Number of GPUs: {torch.cuda.device_count()}')
+    print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
+    print(f'Used device: {device}')
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
     #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
