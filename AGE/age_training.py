@@ -6,9 +6,9 @@ import torch.optim as optim
 import torch.utils.data as data
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from AGE.age_networks import *
-from AGE.loss_functions import *
-from AGE.tools import *
+from age_networks import *
+from loss_functions import *
+from tools import *
 import sys
 import os
 
@@ -23,7 +23,7 @@ plot_dir = os.path.join(root_dir, 'age_plot_cifar')
 if __name__ == '__main__':
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-    trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
@@ -90,8 +90,6 @@ if __name__ == '__main__':
             torch.save(state_E, f"{model_dir}/encoder_{epoch}")
             torch.save(state_G, f"{model_dir}/generator_{epoch}")
         for i, data in enumerate(trainloader, 0):
-            #print(f'Epoch: {epoch+1}, Batch: i+1')
-            #print('--------------------------------')
             input, label = data
             x.data.copy_(input)
             batch_size = list(x.size())[0]
@@ -119,7 +117,10 @@ if __name__ == '__main__':
             sum(loss_E).backward()
             age_optim_E.step()
 
-            #print(f'Encoder: KL z - {KL_z}, Rec x loss - {x_rec_loss}, - KL fake z - {KL_z_fake}')
+            if i == 0:
+                print('--------------------------------')
+                print(f'Epoch: {epoch+1}, Batch: {i+1}')
+                print(f'Encoder: KL z: {KL_z}, Rec x loss: {x_rec_loss}, KL fake z: {KL_z_fake}')
 
             # Update generator
             for g_i in range(2):
@@ -139,8 +140,9 @@ if __name__ == '__main__':
 
                 sum(loss_G).backward()
                 age_optim_G.step()
-
-                # print(f'Generator: KL fake z - {KL_z_fake}, Rec z loss - {z_rec_loss}')
+            if i == 0:
+                print(f'Generator: KL fake z: {KL_z_fake}, Rec z loss: {z_rec_loss}')
+                print('--------------------------------')
 
     state_E = {
         'epoch': epoch,
