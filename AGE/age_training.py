@@ -37,7 +37,7 @@ if __name__ == '__main__':
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
-    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=8, pin_memory=True, drop_last=True)
+    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
     #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
     #testset_sub = torch.utils.data.SubsetRandomSampler(indice)
     #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                 loss_G.append(KL_z_fake)
                 gen_fake_z.append(KL_z_fake)
 
-                z_rec_loss = REC_LAMBDA * cos_loss(z_fake, z_sample)
+                z_rec_loss = REC_LAMBDA * l2_loss(z_fake, z_sample)
                 loss_G.append(z_rec_loss)
                 gen_rec_z.append(z_rec_loss)
 
