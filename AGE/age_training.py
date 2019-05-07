@@ -32,7 +32,7 @@ if __name__ == '__main__':
     print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
     print(f'Used device: {device}')
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
     #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
@@ -52,22 +52,22 @@ if __name__ == '__main__':
     batch_size = 64
     ngpu = 1
 
-    age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).cuda()
-    age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).cuda()
+    age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
+    age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_E.apply(weights_init)
     age_G.apply(weights_init)
     age_E.train()
     age_G.train()
 
-    x = torch.FloatTensor(batch_size, 3, 32, 32).cuda()
-    z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).cuda()
+    x = torch.FloatTensor(batch_size, 3, 32, 32).to(device)
+    z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
     x = Variable(x)
     z_sample = Variable(z_sample)
 
     KL_min = KL_Loss_AGE(minimize=True)
     KL_max = KL_Loss_AGE(minimize=False)
     #loss_l1 = nn.L1Loss()
-    #loss_l2 = nn.MSELoss()
+    loss_l2 = nn.MSELoss()
 
     age_optim_E = optim.Adam(age_E.parameters(), lr=LR, betas=(0.5, 0.999))
     age_optim_G = optim.Adam(age_G.parameters(), lr=LR, betas=(0.5, 0.999))
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                 loss_G.append(KL_z_fake)
                 gen_fake_z.append(KL_z_fake)
 
-                z_rec_loss = REC_LAMBDA * cos_loss(z_fake, z_sample)
+                z_rec_loss = REC_LAMBDA * loss_l2(z_fake, z_sample)
                 loss_G.append(z_rec_loss)
                 gen_rec_z.append(z_rec_loss)
 
