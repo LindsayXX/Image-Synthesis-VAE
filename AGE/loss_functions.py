@@ -1,6 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from tools import *
+
+def cos_loss(x, y):
+    x_n = normalize(x)
+    y_n = normalize(y)
+    return 2 - (x_n).mul(y_n).mean()
+
+def l1_loss(x, y):
+    return (x - y).abs().mean()
 
 class KL_Loss_AGE(nn.Module):
     #age_loss

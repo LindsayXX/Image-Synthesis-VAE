@@ -3,18 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Age_Net(nn.Module):
-    def __init__(self, net, sphere):
+    def __init__(self, net, sphere, ngpu=1):
         super(Age_Net, self).__init__()
         self.net = net
         self.sphere = sphere
+        self.ngpu = ngpu
 
     def forward(self, input):
-        output = self.net(input)
+        gpu_ids=range(self.ngpu)
+        output = nn.parallel.data_parallel(self.net, input, gpu_ids)
+        #output = self.net(input)
         if self.sphere:
             pass # normalize
         return output
 
-def age_enc(im_dim=32, num_col=3, z_dim=128, ndf=64, sphere=True):
+def age_enc(im_dim=32, num_col=3, z_dim=128, ndf=64, sphere=True, ngpu=1):
     if im_dim==32:
         # Input num_col x 32 x 32
         net = nn.Sequential(
@@ -56,9 +59,9 @@ def age_enc(im_dim=32, num_col=3, z_dim=128, ndf=64, sphere=True):
 
         nn.Conv2d(ndf * 16, z_dim, 4, 1, 0, bias=True))
         # Output z_dim x 1 x 1
-    return Age_Net(net, sphere)
+    return Age_Net(net, sphere, ngpu=ngpu)
 
-def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
+def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64, ngpu=1):
     if im_dim==32:
         # Input z_dim
         net = nn.Sequential(
@@ -107,7 +110,7 @@ def age_gen(im_dim=32, num_col=3, z_dim=128, ngf=64):
         nn.ConvTranspose2d(ngf, num_col, 4, 2, 1, bias=False),
         nn.Tanh())
         # Output num_col x 128 x 128
-    return Age_Net(net, sphere=False)
+    return Age_Net(net, sphere=False, ngpu=ngpu)
 
 
 
