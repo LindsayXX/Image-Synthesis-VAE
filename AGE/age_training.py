@@ -13,6 +13,8 @@ from tools import *
 import sys
 import os
 
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+
 root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 if not os.path.exists('age_model_cifar'):
     os.mkdir('age_model_cifar')
@@ -30,12 +32,12 @@ if __name__ == '__main__':
     print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
     print(f'Used device: {device}')
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
     #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
-    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)
+    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
     #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
     #testset_sub = torch.utils.data.SubsetRandomSampler(indice)
     #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
@@ -47,23 +49,25 @@ if __name__ == '__main__':
     Z_DIM = 128
     DROP_LR = 40
     LR = 0.0002
+    batch_size = 64
+    ngpu = 1
 
-    age_E = age_enc(z_dim=Z_DIM).to(device)
-    age_G = age_gen(z_dim=Z_DIM).to(device)
+    age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
+    age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_E.apply(weights_init)
     age_G.apply(weights_init)
     age_E.train()
     age_G.train()
 
-    x = torch.FloatTensor(64, 3, 32, 32).to(device)
-    z_sample = torch.FloatTensor(64, Z_DIM, 1, 1).to(device)
+    x = torch.FloatTensor(batch_size, 3, 32, 32).to(device)
+    z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
     x = Variable(x)
     z_sample = Variable(z_sample)
 
     KL_min = KL_Loss_AGE(minimize=True)
     KL_max = KL_Loss_AGE(minimize=False)
-    loss_l1 = nn.L1Loss()
-    loss_l2 = nn.MSELoss()
+    #loss_l1 = nn.L1Loss()
+    #loss_l2 = nn.MSELoss()
 
     age_optim_E = optim.Adam(age_E.parameters(), lr=LR, betas=(0.5, 0.999))
     age_optim_G = optim.Adam(age_G.parameters(), lr=LR, betas=(0.5, 0.999))
@@ -100,7 +104,7 @@ if __name__ == '__main__':
         for i, data in enumerate(trainloader, 0):
             input, label = data
             x.data.copy_(input)
-            batch_size = list(x.size())[0]
+            #batch_size = list(x.size())[0]
             # Update encoder
             loss_E = []
             age_optim_E.zero_grad()
@@ -111,7 +115,7 @@ if __name__ == '__main__':
             enc_z.append(KL_z)
 
             x_rec = age_G(z)
-            x_rec_loss = REC_MU*loss_l1(x, x_rec)
+            x_rec_loss = REC_MU*l1_loss(x, x_rec)
             loss_E.append(x_rec_loss)
             enc_rec_x.append(x_rec_loss)
 
@@ -142,7 +146,7 @@ if __name__ == '__main__':
                 loss_G.append(KL_z_fake)
                 gen_fake_z.append(KL_z_fake)
 
-                z_rec_loss = REC_LAMBDA * loss_l2(z_fake, z_sample)
+                z_rec_loss = REC_LAMBDA * l2_loss(z_fake, z_sample)
                 loss_G.append(z_rec_loss)
                 gen_rec_z.append(z_rec_loss)
 
