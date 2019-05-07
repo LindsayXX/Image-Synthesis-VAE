@@ -11,6 +11,9 @@ def cos_loss(x, y):
 def l1_loss(x, y):
     return (x - y).abs().mean()
 
+def l2_loss(x, y):
+    return (x - y).pow(2).mean()
+
 class KL_Loss_AGE(nn.Module):
     #age_loss
     def __init__(self, minimize):

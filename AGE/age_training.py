@@ -13,7 +13,7 @@ from tools import *
 import sys
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 if not os.path.exists('age_model_cifar'):
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     DROP_LR = 40
     LR = 0.0002
     batch_size = 64
-    ngpu = 2
+    ngpu = 1
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     KL_min = KL_Loss_AGE(minimize=True)
     KL_max = KL_Loss_AGE(minimize=False)
     #loss_l1 = nn.L1Loss()
-    loss_l2 = nn.MSELoss()
+    #loss_l2 = nn.MSELoss()
 
     age_optim_E = optim.Adam(age_E.parameters(), lr=LR, betas=(0.5, 0.999))
     age_optim_G = optim.Adam(age_G.parameters(), lr=LR, betas=(0.5, 0.999))
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                 loss_G.append(KL_z_fake)
                 gen_fake_z.append(KL_z_fake)
 
-                z_rec_loss = REC_LAMBDA * loss_l2(z_fake, z_sample)
+                z_rec_loss = REC_LAMBDA * l2_loss(z_fake, z_sample)
                 loss_G.append(z_rec_loss)
                 gen_rec_z.append(z_rec_loss)
 
