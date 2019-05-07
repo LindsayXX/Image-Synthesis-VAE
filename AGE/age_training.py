@@ -13,7 +13,7 @@ from tools import *
 import sys
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1"
 
 root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 if not os.path.exists('age_model_cifar'):
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     DROP_LR = 40
     LR = 0.0002
     batch_size = 64
-    ngpu = 1
+    ngpu = 2
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
