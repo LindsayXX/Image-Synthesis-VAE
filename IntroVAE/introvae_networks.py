@@ -55,7 +55,7 @@ class Res_Block(nn.Module):
 
 
 class Intro_enc(nn.Module):
-    def __init__(self, num_col=3, img_dim=256, z_dim=512):#groups=1, scale=1.0
+    def __init__(self, num_col=3, img_dim=256, z_dim=512, ngpu=1):#groups=1, scale=1.0
         super(Intro_enc, self).__init__()
         self.dim = img_dim
         self.nc = num_col
@@ -67,6 +67,8 @@ class Intro_enc(nn.Module):
             nn.AvgPool2d(2),
         )
         self.fc = nn.Linear(z_dim * 4 * 4, 2 * z_dim)
+        self.ngpu = ngpu
+
 
         if self.dim == 256: # 32, 64, 128, 256, 512, 512
             # 32 * 128 * 128
@@ -77,6 +79,9 @@ class Intro_enc(nn.Module):
             self.net.add_model('res512_', Res_Block(512, 512, avg=True))# 512 * 4 * 4
 
         elif self.dim == 128: # 16, 32, 64, 128, 256, 256
+            # I assume the channel sequence start from 16 for 128*128 image instead of 32
+            # as in 256*256(and it's same size as 1024*1024), so that it can have similar
+            # number of Res-block(while 5 for 256*256, 8 for 1024*1024)
             # 16 * 64 * 64
             self.net.add_model('res64', Res_Block(16, 32, avg=True))# 32 * 32 * 32
             self.net.add_model('res64', Res_Block(32, 64, avg=True))# 64 * 16 * 16
@@ -84,17 +89,19 @@ class Intro_enc(nn.Module):
             self.net.add_model('res256', Res_Block(128, 256, avg=True))# 256 * 4 * 4
 
     def forward(self, input):
-        output = self.net(input)
+        gpu_ids = range(self.ngpu)
+        #output = self.net(input)
+        output = nn.parallel.data_parallel(self.net, input, gpu_ids)
         output = output.view(output.size(0), -1)# reshape
-        output = self.fc(output)
-        mu, logvar = output.chunk(2, dim=1)
+        #output = self.fc(output)
+        output = nn.parallel.data_parallel(self.fc, output, gpu_ids)
+        mean, logvar = output.chunk(2, dim=1)# although dunno why they name them like this
 
-        return mu, logvar
-
+        return mean, logvar
 
 
 class Intro_gen(nn.Module):
-    def __init__(self, img_dim=256, num_col=3, z_dim=512):#groups=1, scale=1.0
+    def __init__(self, img_dim=256, num_col=3, z_dim=512, ngpu=1):#groups=1, scale=1.0
         super(Intro_gen, self).__init__()
         self.dim = img_dim
         self.nc = num_col
@@ -102,6 +109,7 @@ class Intro_gen(nn.Module):
         self.fc = nn.Linear(self.z_dim, self.z_dim * 4 * 4)
         self.relu = nn.ReLU(True)
         self.net = nn.Sequential()
+        self.ngpu = ngpu
 
         if self.z_dim == 512:
             self.net.add_module('res512-', Res_Block(512, 512))
@@ -119,10 +127,8 @@ class Intro_gen(nn.Module):
             self.net.add_module('conv', nn.Conv2d(16, num_col, 5, 1, 2))
 
     def forward(self, input):
+        gpu_ids = range(self.ngpu)
         # input: latent vector
-        output = self.net(input)
-        # reshape
-        output = output.view(self.z_dim, 4, 4)
-        output = self.net(output)
+        output = nn.parallel.data_parallel(self.net, input, gpu_ids)
 
         return output
