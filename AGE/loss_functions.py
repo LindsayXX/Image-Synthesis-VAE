@@ -4,16 +4,13 @@ import torch.nn.functional as F
 from tools import *
 
 def cos_loss(x, y):
-    return 2-(x).mul(y).mean()
+    return 2 - (x).mul(y).mean()
 
 def l1_loss(x, y):
     return (x - y).abs().mean()
 
 def l2_loss(x, y, age=True):
-    if age:
-        loss = (x - y).pow(2).mean()
-    else:
-        loss = (x - y).pow(2).sum() / 2
+    loss = (x - y).pow(2).mean()
 
     return loss
 
@@ -57,12 +54,14 @@ class KL_Loss_Intro(nn.Module):
         self.M = 0
         self.N = 0
 
-    def forward(self, mean, var):
+    def forward(self, mean, logvar):
         # Input mean and variance of z
         self.M, self.N = list(mean.size())
         self.mean = mean
-        self.var = var
-        kl_loss = - self.N * self.M/2 + ((self.mean.pow(2) + self.var)/2 - self.var.sqrt().log()).sum()
+        self.logvar = logvar
+        var = logvar.exp()
+        kl_loss = (1 + self.logvar - self.mean.pow(2) - var).sum(dim=-1)
+        kl_loss = kl_loss.mean()
 
         if not self.minimize:
             kl_loss *= -1
