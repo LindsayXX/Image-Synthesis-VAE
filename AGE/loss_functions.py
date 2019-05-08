@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from tools import *
 
 def cos_loss(x, y):
-    return (x).mul(y).mean()
+    return 2-(x).mul(y).mean()
 
 def l1_loss(x, y):
     return (x - y).abs().mean()

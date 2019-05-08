@@ -15,7 +15,7 @@ class Age_Net(nn.Module):
         output = nn.parallel.data_parallel(self.net, input, gpu_ids)
         #output = self.net(input)
         if self.sphere:
-            normalize(output)
+            output = normalize(output)
         return output
 
 def age_enc(im_dim=32, num_col=3, z_dim=128, ndf=64, sphere=True, ngpu=1):
