@@ -4,9 +4,7 @@ import torch.nn.functional as F
 from tools import *
 
 def cos_loss(x, y):
-    x_n = normalize(x)
-    y_n = normalize(y)
-    return 2 - (x_n).mul(y_n).mean()
+    return 2-(x).mul(y).mean()
 
 def l1_loss(x, y):
     return (x - y).abs().mean()
@@ -34,7 +32,7 @@ class KL_Loss_AGE(nn.Module):
         self.M = list(z.size())[1] # size of latent space
         self.mean = z.mean(0)
         self.var = z.var(0, unbiased=False)
-        kl_loss = -self.M/2 + ((self.mean.pow(2) + self.var)/2 - self.var.sqrt().log()).sum()
+        kl_loss = -1/2 + ((self.mean.pow(2) + self.var)/2 - self.var.sqrt().log()).mean()
 
         if not self.minimize:
             kl_loss *= -1
