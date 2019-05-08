@@ -5,6 +5,7 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torch.utils.data as data
+import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from .introvae_networks import *
@@ -40,7 +41,6 @@ def reparameterization(mean, logvar):
 
     return eps.mul(std).add_(mean)
 
-    return z
 
 
 if __name__ == '__main__':
@@ -113,32 +113,36 @@ if __name__ == '__main__':
 
     for epoch in tqdm(range(NUM_EPOCH)):
         for i, data in enumerate(trainloader, 0):
-            x.data.copy_(input)
+            x.data.copy_(data)
 
+            # ----- update the encoder -------
+            loss_E = []
+            optimizer_E.zero_grad()
             mean, logvar = intro_E(x)
             z = reparameterization(mean, logvar)
             z_p = sampling(batch_size, Z_DIM, sphere=False)
             x_r = intro_G(z)
             x_p = intro_G(z_p)
-            # ----- update the encoder -------
-            loss_E = []
             L_ae = beta * l2_loss(x_r, x, age=False)
             loss_E.append(L_ae)
-            z_r = intro_E(x_r.detach())
-            z_pp = intro_E(x_p.detach())
-            loss_E.append(KL_max(z))
-            # TODO fix this
-            L_adv_E = (torch.max(torch.zeros(1, 1), (M - KL_max(z_r))) + torch.max(torch.zeros(1, 1), (M - KL_max(z_pp)))).mul(alpha)
+            mean_r, logvar_r = intro_E(x_r.detach())
+            #z_r = reparameterization(mean_r, logvar_r)
+            mean_pp, logvar_pp = intro_E(x_p.detach())
+            #z_pp = reparameterization(mean_pp, logvar_pp)
+            loss_E.append(KL_max(mean, logvar))
+            # max(0, x) = ReLu(x)
+            L_adv_E = (F.relu(M - KL_max(mean_r, logvar_r)) + F.relu(M - KL_max(mean_pp, logvar_pp))).mul(alpha)
             loss_E.append(L_adv_E)
 
-            sum(loss_E).backward()
+            sum(loss_E).backward(retain_graph=True) # keep the variable after doing backward, for the backprop of Generator
             optimizer_E.step()
 
             # ----- update the generator/decoder -------
             loss_G = []
-            z_r_g = intro_E(x_r)
-            z_pp_g = intro_E(x_p)
-            L_adv_G = alpha * (KL_min(z_r_g) + KL_min(z_pp_g))
+            optimizer_G.zero_grad()
+            mean_r_g, logvar_r_g = intro_E(x_r)
+            mean_pp_g, logvar_pp_g = intro_E(x_p)
+            L_adv_G = alpha * (KL_min(mean_r_g, logvar_r_g) + KL_min(mean_pp_g, logvar_pp_g))
             loss_G.append(L_adv_G + beta * L_ae)
 
             sum(loss_G).backward()

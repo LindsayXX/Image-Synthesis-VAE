@@ -67,7 +67,7 @@ class KL_Loss_Intro(nn.Module):
         if not self.minimize:
             kl_loss *= -1
 
-        return kl_loss
+        return kl_loss.mean()
 
 '''
 # rest part of the loss function : loss of AutoEncoder
