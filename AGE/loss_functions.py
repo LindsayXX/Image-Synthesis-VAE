@@ -11,8 +11,14 @@ def cos_loss(x, y):
 def l1_loss(x, y):
     return (x - y).abs().mean()
 
-def l2_loss(x, y):
-    return (x - y).pow(2).mean()
+def l2_loss(x, y, age=True):
+    if age:
+        loss = (x - y).pow(2).mean()
+    else:
+        loss = (x - y).pow(2).sum() / 2
+
+    return loss
+
 
 class KL_Loss_AGE(nn.Module):
     #age_loss
@@ -65,8 +71,10 @@ class KL_Loss_Intro(nn.Module):
 
         return kl_loss
 
-"""
+'''
 # rest part of the loss function : loss of AutoEncoder
 loss_l2 = nn.MSELoss()
 loss_AE = 1/2 * loss_l2(recon, samples)
-"""
+'''
+
+

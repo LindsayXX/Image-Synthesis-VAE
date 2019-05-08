@@ -1,5 +1,6 @@
 from tqdm import tqdm
 
+import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
@@ -32,7 +33,14 @@ def load_model():
 
 def reparameterization(mean, logvar):
     # TODO z = mu + sigma.mul(eps)
-    return 0
+    std = logvar.mul(0.5).exp_()
+
+    eps = torch.cuda.FloatTensor(std.size()).normal_()
+    eps = Variable(eps)
+
+    return eps.mul(std).add_(mean)
+
+    return z
 
 
 if __name__ == '__main__':
@@ -45,13 +53,22 @@ if __name__ == '__main__':
     --m_plus=1000 --weight_rec=1.0  --num_vae=10
     """
     NUM_EPOCH = 2 #500
-    M = 120
     LR = 0.0002
     weight_rec = 0.05
     batch_size = 16
-    Z_DIM = 512
     ngpu = 1
     IMG_DIM = 256
+    Z_DIM = 512
+    alpha = 0.25
+    beta = 0.05
+    M = 120
+    '''
+    IMG_DIM = 128
+    Z_DIM = 256
+    alpha = 0.25
+    beta = 0.5
+    M = 110
+    '''
 
     cudnn.benchmark = True
 
@@ -81,8 +98,8 @@ if __name__ == '__main__':
     intro_G = load_model(intro_G)
     '''
 
-    optimizer_E = optim.Adam(intro_E.parameters(), lr=LR, betas=(0.5, 0.999))
-    optimizer_G = optim.Adam(intro_G.parameters(), lr=LR, betas=(0.5, 0.999))
+    optimizer_E = optim.Adam(intro_E.parameters(), lr=LR, betas=(0.9, 0.999))
+    optimizer_G = optim.Adam(intro_G.parameters(), lr=LR, betas=(0.9, 0.999))
 
     x = torch.FloatTensor(batch_size, 3, IMG_DIM, IMG_DIM).to(device)
     z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
@@ -101,9 +118,31 @@ if __name__ == '__main__':
             mean, logvar = intro_E(x)
             z = reparameterization(mean, logvar)
             z_p = sampling(batch_size, Z_DIM, sphere=False)
+            x_r = intro_G(z)
+            x_p = intro_G(z_p)
+            # ----- update the encoder -------
+            loss_E = []
+            L_ae = beta * l2_loss(x_r, x, age=False)
+            loss_E.append(L_ae)
+            z_r = intro_E(x_r.detach())
+            z_pp = intro_E(x_p.detach())
+            loss_E.append(KL_max(z))
+            # TODO fix this
+            L_adv_E = (torch.max(torch.zeros(1, 1), (M - KL_max(z_r))) + torch.max(torch.zeros(1, 1), (M - KL_max(z_pp)))).mul(alpha)
+            loss_E.append(L_adv_E)
 
+            sum(loss_E).backward()
+            optimizer_E.step()
 
+            # ----- update the generator/decoder -------
+            loss_G = []
+            z_r_g = intro_E(x_r)
+            z_pp_g = intro_E(x_p)
+            L_adv_G = alpha * (KL_min(z_r_g) + KL_min(z_pp_g))
+            loss_G.append(L_adv_G + beta * L_ae)
 
+            sum(loss_G).backward()
+            optimizer_G.step()
 
 
 
