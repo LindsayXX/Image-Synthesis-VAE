@@ -34,7 +34,7 @@ if __name__ == '__main__':
     print(f'Used device: {device}')
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-    trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
