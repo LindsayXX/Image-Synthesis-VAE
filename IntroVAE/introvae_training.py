@@ -14,19 +14,26 @@ from AGE.tools import *
 import os
 import sys
 
-def load_model():
+def load_model(IMG_DIM, Z_DIM, ngpu, model_dir):
     # TODO code for load the models
-    return 0
+    intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
+    intro_G = Intro_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
+    checkpoint_E = torch.load(model_dir+'encoder_')
+    checkpoint_G = torch.load(model_dir+'generator_')
+    intro_E.load_state_dict(checkpoint_E['state_dict'])
+    intro_G.load_state_dict(checkpoint_G['state_dict'])
+
+    return intro_E, intro_G
 
 def reparameterization(mean, logvar, ngpu=1):
-    # TODO z = mu + sigma.mul(eps)
+    # z = mu + sigma.mul(eps)
     std = logvar.mul(0.5).exp_()
     z = eps.mul(std).add_(mean)
 
     return z #.unsqueeze_(-1).unsqueeze_(-1)
 
 
-def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_worker=4):
+def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_worker=4):
     os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
     root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
     if not os.path.exists('intro_model_{}'.format(dataset)):
@@ -77,7 +84,7 @@ def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_wor
         elif imgsz == 256:
             z_dim = 512
 
-    return trainloader, imgsz, z_dim
+    return trainloader, imgsz, z_dim, model_dir, plot_dir
 
 
 if __name__ == '__main__':
@@ -93,8 +100,6 @@ if __name__ == '__main__':
     LR = 0.0002
     weight_rec = 0.05
     batch_size = 2 #16
-    #IMG_DIM = 128#256
-    #Z_DIM = 256#512
     alpha = 0.25
     beta = 0.05
     M = 120
@@ -125,20 +130,20 @@ if __name__ == '__main__':
 
 
     root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
-    trainloader, IMG_DIM, Z_DIM = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=128, num_worker=4)
+    trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=256, num_worker=4)
 
     # ------- build model -----------
     intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
     intro_G = Intro_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
-    intro_E.apply(weights_init)
-    intro_G.apply(weights_init)
+    #intro_E.apply(weights_init)
+    #intro_G.apply(weights_init)
+
     intro_E.train()
     intro_G.train()
 
     # -------- load models if needed --------
     '''
-    intro_E = load_model(intro_E)
-    intro_G = load_model(intro_G)
+    intro_E, intro_G = load_model(IMG_DIM, Z_DIM, ngpu, model_dir)
     '''
 
     optimizer_E = optim.Adam(intro_E.parameters(), lr=LR, betas=(0.9, 0.999))
@@ -158,6 +163,21 @@ if __name__ == '__main__':
     # loss_l2 = nn.MSELoss()
 
     for epoch in tqdm(range(NUM_EPOCH)):
+        # --------- save model in every 100 epoches ----------
+        if epoch % 100:
+            state_E = {
+                'epoch': epoch,
+                'state_dict': intro_E.state_dict(),
+                'optimizer': optimizer_E.state_dict(),
+            }
+            state_G = {
+                'epoch': epoch,
+                'state_dict': intro_G.state_dict(),
+                'optimizer': optimizer_G.state_dict(),
+            }
+            torch.save(state_E, f"{model_dir}/encoder_{epoch}")
+            torch.save(state_G, f"{model_dir}/generator_{epoch}")
+
         for i, data in enumerate(trainloader, 0):
             print('Batch:',i)
             input, label = data
@@ -197,6 +217,19 @@ if __name__ == '__main__':
             sum(loss_G).backward()
             optimizer_G.step()
 
+    # ---------- save model -------------
+    state_E = {
+        'epoch': epoch,
+        'state_dict': intro_E.state_dict(),
+        'optimizer': optimizer_E.state_dict(),
+    }
+    state_G = {
+        'epoch': epoch,
+        'state_dict': intro_G.state_dict(),
+        'optimizer': optimizer_G.state_dict(),
+    }
+    torch.save(state_E, f"{model_dir}/encoder_{epoch}")
+    torch.save(state_G, f"{model_dir}/generator_{epoch}")
 
 
     # TODO: visualize some example and test
