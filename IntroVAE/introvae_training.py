@@ -23,7 +23,7 @@ def reparameterization(mean, logvar, ngpu=1):
     std = logvar.mul(0.5).exp_()
     z = eps.mul(std).add_(mean)
 
-    return z.unsqueeze_(-2)
+    return z #.unsqueeze_(-1).unsqueeze_(-1)
 
 
 def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_worker=4):
@@ -145,12 +145,10 @@ if __name__ == '__main__':
     optimizer_G = optim.Adam(intro_G.parameters(), lr=LR, betas=(0.9, 0.999))
 
     x = torch.FloatTensor(batch_size, 3, IMG_DIM, IMG_DIM).to(device)
-    z_p = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
-    z = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
+    z_p = torch.FloatTensor(batch_size, Z_DIM).to(device)
     eps = torch.FloatTensor(batch_size, Z_DIM).normal_().to(device)
     x = Variable(x)
     z_p = Variable(z_p)
-    z = Variable(z)
     eps = Variable(eps)
 
 
@@ -170,7 +168,8 @@ if __name__ == '__main__':
             optimizer_E.zero_grad()
             mean, logvar = intro_E(x)
             z = reparameterization(mean, logvar, ngpu)
-            z_p = sampling(batch_size, Z_DIM, sphere=False)
+            z_p.data = sampling(batch_size, Z_DIM, sphere=False, intro=True)
+            #z_p.data.copy_(sampling(batch_size, Z_DIM, sphere=False, intro=True))
             x_r = intro_G(z)
             x_p = intro_G(z_p)
             L_ae = beta * l2_loss(x_r, x, age=False)

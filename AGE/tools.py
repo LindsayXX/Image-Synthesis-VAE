@@ -23,10 +23,13 @@ def normalize(z):
 
     return z
 
-def sampling(batch_size, z_dim, sphere=True):
-    samples = torch.randn(batch_size, z_dim, 1, 1)
+def sampling(batch_size, z_dim, sphere=True, intro=False):
     if sphere:
+        samples = torch.randn(batch_size, z_dim, 1, 1)
         samples = normalize(samples)
+    if intro:
+        samples = torch.randn(batch_size, z_dim)
+        #samples = torch.FloatTensor(batch_size, z_dim)
 
     return samples
 
