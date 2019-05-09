@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import torch.optim as optim
 import torch.utils.data as data
 import torch.backends.cudnn as cudnn
+import torchvision.utils as vutils
 from torch.autograd import Variable
 from age_networks import *
 from loss_functions import *
@@ -13,7 +14,7 @@ from tools import *
 import sys
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1"
 
 root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 if not os.path.exists('age_model_cifar'):
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     print(f'Used device: {device}')
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
     #indice = list(range(0, 10000))
     # sampler=data.SubsetRandomSampler(indice)
     #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
@@ -51,13 +52,12 @@ if __name__ == '__main__':
     LR = 0.0002
     batch_size = 64
     ngpu = 2
+    cudnn.benchmark = True
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
     age_E.apply(weights_init)
     age_G.apply(weights_init)
-    age_E.train()
-    age_G.train()
 
     x = torch.FloatTensor(batch_size, 3, 32, 32).to(device)
     z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
@@ -78,7 +78,8 @@ if __name__ == '__main__':
     gen_fake_z = []
     gen_rec_z = []
 
-    cudnn.benchmark = True
+    age_E.train()
+    age_G.train()
 
     for epoch in tqdm(range(NUM_EPOCH)):
         if epoch % DROP_LR == (DROP_LR - 1):

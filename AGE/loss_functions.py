@@ -30,8 +30,8 @@ class KL_Loss_AGE(nn.Module):
     def forward(self, z):
         # Input normalized z
         self.M = list(z.size())[1] # size of latent space
-        self.mean = z.mean(0)
-        self.var = z.var(0, unbiased=False)
+        self.mean = z.mean(dim=0)
+        self.var = z.var(dim=0, unbiased=False)
         kl_loss = -1/2 + ((self.mean.pow(2) + self.var)/2 - self.var.sqrt().log()).mean()
 
         if not self.minimize:
