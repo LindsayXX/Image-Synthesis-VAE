@@ -1,11 +1,22 @@
 import os
-
+import matplotlib.pyplot as plt
 import torch
 import torch.utils.data as data
 from os.path import join
 from PIL import Image, ImageOps
 import random
 import torchvision.transforms as transforms
+from torchvision import datasets
+import torchvision
+import numpy as np
+
+this_root = os.path.abspath(os.path.dirname(__file__))
+
+
+def show(img):
+    npimg = img.detach().numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation='nearest')
+    plt.show()
 
 
 def load_image(file_path, input_height=128, input_width=None, output_height=128, output_width=None,
@@ -49,39 +60,48 @@ def load_fake_image(img, input_height, input_width, output_height, output_width)
     fake_image = torch.load(img)
     return fake_image
 
-class DataLoader(data.Dataset):
-    def __init__(self, image_list, root_path=None, dataset_type='celeba',
-                 input_height=128, input_width=None,
-                 crop_height=None, crop_width=None, is_random_crop=False, is_mirror=True, is_gray=False):
 
-        super(DataLoader, self).__init__()
+def get_list_filenames(root_path):
+    list = []
+    for root, dirs, files in os.walk(root_path):
+        for file in files:
+            if not file.endswith(".jpg"):
+                continue
+            path = os.path.join(root, file).replace(root_path, '')
+            list.append(path)
+
+
+class Dataset(data.Dataset):
+    def __init__(self, root_path, filename = '1000_fake_tensor_cifar_10', dataset_type='celeba', input_height=128,
+                 crop_height=None, crop_width=None, is_random_crop=False, is_mirror=True,
+                 is_gray=False):
+
+        super(Dataset, self).__init__()
         self.dataset_type = dataset_type
-        self.image_filenames = image_list
         self.root_path = root_path
-
+        self.input_height = input_height
         self.is_random_crop = is_random_crop
         self.is_mirror = is_mirror
         self.crop_height = crop_height
         self.crop_width = crop_width
-
+        self.filename = filename
         self.is_gray = is_gray
 
         if dataset_type is 'celeba':
+            self.image_filenames = get_list_filenames(root_path)
+
             self.input_transform = transforms.Compose([
-                transforms.Resize([input_width, input_height]),
+                # transforms.RandomSizedCrop(224),
+                # transforms.RandomHorizontalFlip(),
+                transforms.Resize([self.input_height, self.input_height]),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-            self.input_height = 128
-            self.input_width = 128
-        elif dataset_type is 'fake_generated':
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225])])
 
-            self.input_transform = transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
-            self.input_height = 32
-            self.input_width = 32
+            # db = datasets.ImageFolder(root, transform=transform)
+            indice = list(range(0, 5000))
+            try_sampler = data.SubsetRandomSampler(indice)
 
-        self.output_height = self.input_height
-        self.output_width = self.input_width
 
     def __getitem__(self, index):
         if self.dataset_type is 'celeba':
@@ -91,33 +111,22 @@ class DataLoader(data.Dataset):
 
             img = self.input_transform(img)
 
-        if self.dataset_type is 'fake_generated':
-            img = load_fake_image(self.image_filenames[index],
-                                  self.input_height,
-                                  self.input_width,
-                                  self.output_height,
-                                  self.output_width)
-
-            img = self.input_transform(img)
-
-        return img
 
     def __len__(self):
         return len(self.image_filenames)
 
 
-def load_data(root_dir):
 
-    list = []
-    for root, dirs, files in os.walk(root_dir):
-        for file in files:
-            if not file.endswith(".png"):
-                continue
-            path = os.path.join(root, file).replace(root_dir, '')
-            list.append(path)
+if __name__ == '__main__':
+    trainset = Dataset(this_root, dataset_type='fake_generated')
+    trainloader = data.DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
+    # transform = transforms.Compose([ transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
+    # trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    # trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
 
+    # torch_file = os.path.join(this_root, '4_fake_tensor_cifar_10')
+    #
+    # fake = torch.load(torch_file)
 
-
-    db = DataLoader(list, root_dir, dataset_type='celeba')
-    return db
+    # print(len(fake))

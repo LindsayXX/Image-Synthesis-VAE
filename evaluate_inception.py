@@ -3,12 +3,13 @@ from torch import nn
 from torch.autograd import Variable
 from torch.nn import functional as F
 import torch.utils.data as data
-
 from torchvision.models.inception import inception_v3
-
 import numpy as np
 from scipy.stats import entropy
+import os
 
+
+this_root = os.path.abspath(os.path.dirname(__file__))
 
 class IgnoreLabelDataset(torch.utils.data.Dataset):
     def __init__(self, orig):
@@ -66,7 +67,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         batch = batch.type(dtype)
         batchv = Variable(batch)
         batch_size_i = batch.size()[0]
-        print(f'{i * batch_size} loop')
+        print(f'{i * batch_size} evaluated samples')
 
         preds[i * batch_size:i * batch_size + batch_size_i] = get_pred(batchv)
 
@@ -86,16 +87,11 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
 
 
 if __name__ == '__main__':
-    import torchvision.datasets as dset
-    import torchvision.transforms as transforms
-
-
-    # Expecting the data/images from the Generator here
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    cifar = dset.CIFAR10(root='./data', download=True,
-                         transform=transform)
-
-    IgnoreLabelDataset(cifar)
-
+    path_to_fake = '1000_fake_tensor_cifar_10'
     print("Calculating Inception Score... With Mean score and Std value")
-    print(inception_score(IgnoreLabelDataset(cifar), cuda=False, batch_size=32, resize=True, splits=10))
+
+    print(inception_score(torch.load(os.path.join(this_root, path_to_fake)),
+                          cuda=False,
+                          batch_size=32,
+                          resize=True,
+                          splits=10))
