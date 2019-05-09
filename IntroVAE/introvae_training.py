@@ -35,7 +35,6 @@ def load_model():
 def reparameterization(mean, logvar):
     # TODO z = mu + sigma.mul(eps)
     std = logvar.mul(0.5).exp_()
-
     eps = torch.cuda.FloatTensor(std.size()).normal_()
     eps = Variable(eps)
 
