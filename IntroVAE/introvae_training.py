@@ -18,13 +18,12 @@ def load_model():
     # TODO code for load the models
     return 0
 
-def reparameterization(mean, logvar):
+def reparameterization(mean, logvar, ngpu=1):
     # TODO z = mu + sigma.mul(eps)
     std = logvar.mul(0.5).exp_()
-    eps = torch.cuda.FloatTensor(std.size()).normal_()
-    eps = Variable(eps)
+    z = eps.mul(std).add_(mean)
 
-    return eps.mul(std).add_(mean)
+    return z.unsqueeze_(-2)
 
 
 def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_worker=4):
@@ -68,12 +67,17 @@ def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_wor
                                  std=[0.229, 0.224, 0.225])])
 
         db = datasets.ImageFolder(root, transform=transform)
-        indice = list(range(0, 5000))
+        indice = list(range(0, 10))
         try_sampler = data.SubsetRandomSampler(indice)
         trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, num_workers=num_worker, sampler=try_sampler)
         #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
 
-    return trainloader
+        if imgsz == 128:
+            z_dim = 256
+        elif imgsz == 256:
+            z_dim = 512
+
+    return trainloader, imgsz, z_dim
 
 
 if __name__ == '__main__':
@@ -88,10 +92,9 @@ if __name__ == '__main__':
     NUM_EPOCH = 2 #500
     LR = 0.0002
     weight_rec = 0.05
-    batch_size = 16
-    ngpu = 1
-    IMG_DIM = 256
-    Z_DIM = 512
+    batch_size = 2 #16
+    #IMG_DIM = 128#256
+    #Z_DIM = 256#512
     alpha = 0.25
     beta = 0.05
     M = 120
@@ -113,13 +116,16 @@ if __name__ == '__main__':
         print(f'Number of GPUs: {torch.cuda.device_count()}')
         print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
         print(f'Used device: {device}')
+        ngpu = torch.cuda.device_count()
+
     else:
         device = torch.device('cpu')
         print(f'Used device: {device}')
+        ngpu = 0
 
 
     root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
-    trainloader = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=IMG_DIM, num_worker=4)
+    trainloader, IMG_DIM, Z_DIM = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=128, num_worker=4)
 
     # ------- build model -----------
     intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
@@ -139,9 +145,14 @@ if __name__ == '__main__':
     optimizer_G = optim.Adam(intro_G.parameters(), lr=LR, betas=(0.9, 0.999))
 
     x = torch.FloatTensor(batch_size, 3, IMG_DIM, IMG_DIM).to(device)
-    z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
+    z_p = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
+    z = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
+    eps = torch.FloatTensor(batch_size, Z_DIM).normal_().to(device)
     x = Variable(x)
-    z_sample = Variable(z_sample)
+    z_p = Variable(z_p)
+    z = Variable(z)
+    eps = Variable(eps)
+
 
     KL_min = KL_Loss_Intro(minimize=True)
     KL_max = KL_Loss_Intro(minimize=False)
@@ -150,13 +161,15 @@ if __name__ == '__main__':
 
     for epoch in tqdm(range(NUM_EPOCH)):
         for i, data in enumerate(trainloader, 0):
-            x.data.copy_(data)
+            print('Batch:',i)
+            input, label = data
+            x.data.copy_(input)
 
             # ----- update the encoder -------
             loss_E = []
             optimizer_E.zero_grad()
             mean, logvar = intro_E(x)
-            z = reparameterization(mean, logvar)
+            z = reparameterization(mean, logvar, ngpu)
             z_p = sampling(batch_size, Z_DIM, sphere=False)
             x_r = intro_G(z)
             x_p = intro_G(z_p)
