@@ -7,9 +7,13 @@ from torchvision.models.inception import inception_v3
 import numpy as np
 from scipy.stats import entropy
 import os
-
-
+from matplotlib import pyplot as plt
 this_root = os.path.abspath(os.path.dirname(__file__))
+
+def show(img):
+    npimg = img.detach().numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation='nearest')
+    plt.show()
 
 class IgnoreLabelDataset(torch.utils.data.Dataset):
     def __init__(self, orig):
@@ -67,9 +71,10 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         batch = batch.type(dtype)
         batchv = Variable(batch)
         batch_size_i = batch.size()[0]
-        print(f'{i * batch_size} evaluated samples')
 
         preds[i * batch_size:i * batch_size + batch_size_i] = get_pred(batchv)
+        print(f'{batch_size + i * batch_size} evaluated samples')
+
 
     # Now compute the mean kl-div
     split_scores = []
@@ -86,11 +91,34 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     return np.mean(split_scores), np.std(split_scores)
 
 
+def load_fake_data(path_to_fake):
+
+    if os.path.isdir(path_to_fake):
+        dataset = []
+        for file in os.listdir(path_to_fake):
+            filename = this_root + '/tensors/' + file
+            data_file = torch.load(filename)
+            dataset.append(data_file)
+
+        return torch.cat(dataset)
+
+    else:
+        return torch.load(os.path.join(path_to_fake))
+
+
+
+
 if __name__ == '__main__':
     path_to_fake = '1000_fake_tensor_cifar_10'
+
+    dataset = load_fake_data(path_to_fake)
+
+
+    show(dataset[5])
+
     print("Calculating Inception Score... With Mean score and Std value")
 
-    print(inception_score(torch.load(os.path.join(this_root, path_to_fake)),
+    print(inception_score(dataset,
                           cuda=False,
                           batch_size=32,
                           resize=True,
