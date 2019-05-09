@@ -2,31 +2,17 @@ from tqdm import tqdm
 
 import torch
 import torchvision
-import torchvision.transforms as transforms
+from torchvision import transforms, datasets
 import torch.optim as optim
 import torch.utils.data as data
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from .introvae_networks import *
+from IntroVAE.introvae_networks import *
 from AGE.loss_functions import *
 from AGE.tools import *
 import os
 import sys
-
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-
-root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-if not os.path.exists('intro_model_celebA'):
-    os.mkdir('intro_model_celebA')
-if not os.path.exists('intro_plot_celebA'):
-    os.mkdir('intro_plot_celebA')
-model_dir = os.path.join(root_dir, 'intro_model_celebA')
-plot_dir = os.path.join(root_dir, 'intro_plot_celebA')
-
-def readdata():
-    transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
 
 def load_model():
     # TODO code for load the models
@@ -40,6 +26,54 @@ def reparameterization(mean, logvar):
 
     return eps.mul(std).add_(mean)
 
+
+def load_data(dataset='celebA', root='.\data', batch_size=64, imgsz=128, num_worker=4):
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
+    root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    if not os.path.exists('intro_model_{}'.format(dataset)):
+        os.mkdir('Intro_model_{}'.format(dataset))
+    if not os.path.exists('Intro_plot_{}'.format(dataset)):
+        os.mkdir('Intro_plot_{}'.format(dataset))
+    model_dir = os.path.join(root_dir, 'Intro_model_{}'.format(dataset))
+    plot_dir = os.path.join(root_dir, 'Intro_plot_{}'.format(dataset))
+
+    if dataset == 'cifar':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
+        # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+        # trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+        # indice = list(range(0, 10000))
+        # sampler=data.SubsetRandomSampler(indice)
+        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
+                                      drop_last=True)
+        # testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+        # testset_sub = torch.utils.data.SubsetRandomSampler(indice)
+        # testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
+
+    if dataset == 'SVHN':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download=True)
+        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
+                                      drop_last=True)
+
+    if dataset == 'celebA':
+        transform = transforms.Compose([
+            # transforms.RandomSizedCrop(224),
+            # transforms.RandomHorizontalFlip(),
+            transforms.Resize([imgsz, imgsz]),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+
+        db = datasets.ImageFolder(root, transform=transform)
+        indice = list(range(0, 5000))
+        try_sampler = data.SubsetRandomSampler(indice)
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, num_workers=num_worker, sampler=try_sampler)
+        #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
+
+    return trainloader
 
 
 if __name__ == '__main__':
@@ -71,17 +105,21 @@ if __name__ == '__main__':
 
     cudnn.benchmark = True
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(f'Cuda available: {torch.cuda.is_available()}')
-    print(f'Current device number: {torch.cuda.current_device()}')
-    print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
-    print(f'Number of GPUs: {torch.cuda.device_count()}')
-    print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
-    print(f'Used device: {device}')
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        print(f'Cuda available: {torch.cuda.is_available()}')
+        print(f'Current device number: {torch.cuda.current_device()}')
+        print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
+        print(f'Number of GPUs: {torch.cuda.device_count()}')
+        print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
+        print(f'Used device: {device}')
+    else:
+        device = torch.device('cpu')
+        print(f'Used device: {device}')
 
-    # TODO: read data
-    # -------------------------- load data ------------------------------------
-    readdata()
+
+    root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
+    trainloader = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=IMG_DIM, num_worker=4)
 
     # ------- build model -----------
     intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
@@ -91,7 +129,7 @@ if __name__ == '__main__':
     intro_E.train()
     intro_G.train()
 
-    # load models if needed
+    # -------- load models if needed --------
     '''
     intro_E = load_model(intro_E)
     intro_G = load_model(intro_G)
@@ -133,7 +171,7 @@ if __name__ == '__main__':
             L_adv_E = (F.relu(M - KL_max(mean_r, logvar_r)) + F.relu(M - KL_max(mean_pp, logvar_pp))).mul(alpha)
             loss_E.append(L_adv_E)
 
-            sum(loss_E).backward(retain_graph=True) # keep the variable after doing backward, for the backprop of Generator
+            sum(loss_E).backward(retain_graph=True) # keep the variable after doing back`ward, for the backprop of Generator
             optimizer_E.step()
 
             # ----- update the generator/decoder -------

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tools import *
+from AGE.tools import *
 
 def cos_loss(x, y):
     return 2 - (x).mul(y).mean()

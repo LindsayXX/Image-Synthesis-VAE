@@ -60,23 +60,22 @@ class Intro_enc(nn.Module):
         self.dim = img_dim
         self.nc = num_col
         self.c_dim = self.dim // 8
-        self.net = nn.Sequential(
-            nn.Conv2d(self.nc, self.c_dim, 5, 1, 2, bias=False),#
-            nn.BatchNorm2d(self.c_dim),
-            nn.LeakyReLU(0.2),
-            nn.AvgPool2d(2),
-        )
+        self.layers = [nn.Conv2d(self.nc, self.c_dim, 5, 1, 2, bias=False),
+                  nn.BatchNorm2d(self.c_dim),
+                  nn.LeakyReLU(0.2),
+                  nn.AvgPool2d(2)]
         self.fc = nn.Linear(z_dim * 4 * 4, 2 * z_dim)
         self.ngpu = ngpu
 
 
         if self.dim == 256: # 32, 64, 128, 256, 512, 512
             # 32 * 128 * 128
-            self.net.add_model('res64', Res_Block(32, 64, avg=True))# 64 * 64 * 64
-            self.net.add_model('res128', Res_Block(64, 128, avg=True))# 128 * 32 * 32
-            self.net.add_model('res256', Res_Block(128, 256, avg=True))# 256 * 16 * 16
-            self.net.add_model('res512', Res_Block(256, 512, avg=True))# 512 * 8 * 8
-            self.net.add_model('res512_', Res_Block(512, 512, avg=True))# 512 * 4 * 4
+            self.layers.extend([Res_Block(32, 64, avg=True),# 64 * 64 * 64
+                               Res_Block(64, 128, avg=True),# 128 * 32 * 32
+                               Res_Block(128, 256, avg=True),# 256 * 16 * 16
+                               Res_Block(256, 512, avg=True),# 512 * 8 * 8
+                               Res_Block(512, 512, avg=True)])# 512 * 4 * 4
+            self.net = nn.Sequential(*self.layers)
 
         elif self.dim == 128: # 16, 32, 64, 128, 256, 256
             # I assume the channel sequence start from 16 for 128*128 image instead of 32
