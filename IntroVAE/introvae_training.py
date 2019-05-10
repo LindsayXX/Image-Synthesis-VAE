@@ -25,9 +25,11 @@ def load_model(IMG_DIM, Z_DIM, ngpu, model_dir):
 
     return intro_E, intro_G
 
+
 def reparameterization(mean, logvar, ngpu=1):
     # z = mu + sigma.mul(eps)
     std = logvar.mul(0.5).exp_()
+    eps = torch.FloatTensor(batch_size, Z_DIM).normal_().to(device)
     z = eps.mul(std).add_(mean)
 
     return z #.unsqueeze_(-1).unsqueeze_(-1)
@@ -76,6 +78,7 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_wor
         db = datasets.ImageFolder(root, transform=transform)
         indice = list(range(0, 10))
         try_sampler = data.SubsetRandomSampler(indice)
+        train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
         trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, num_workers=num_worker, sampler=try_sampler)
         #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
 
@@ -151,10 +154,8 @@ if __name__ == '__main__':
 
     x = torch.FloatTensor(batch_size, 3, IMG_DIM, IMG_DIM).to(device)
     z_p = torch.FloatTensor(batch_size, Z_DIM).to(device)
-    eps = torch.FloatTensor(batch_size, Z_DIM).normal_().to(device)
     x = Variable(x)
     z_p = Variable(z_p)
-    eps = Variable(eps)
 
 
     KL_min = KL_Loss_Intro(minimize=True)
@@ -198,9 +199,9 @@ if __name__ == '__main__':
             #z_r = reparameterization(mean_r, logvar_r)
             mean_pp, logvar_pp = intro_E(x_p.detach())
             #z_pp = reparameterization(mean_pp, logvar_pp)
-            loss_E.append(KL_max(mean, logvar))
+            loss_E.append(KL_min(mean, logvar))
             # max(0, x) = ReLu(x)
-            L_adv_E = (F.relu(M - KL_max(mean_r, logvar_r)) + F.relu(M - KL_max(mean_pp, logvar_pp))).mul(alpha)
+            L_adv_E = (F.relu(M + KL_max(mean_r, logvar_r)) + F.relu(M + KL_max(mean_pp, logvar_pp))).mul(alpha)
             loss_E.append(L_adv_E)
 
             sum(loss_E).backward(retain_graph=True) # keep the variable after doing back`ward, for the backprop of Generator
@@ -212,7 +213,7 @@ if __name__ == '__main__':
             mean_r_g, logvar_r_g = intro_E(x_r)
             mean_pp_g, logvar_pp_g = intro_E(x_p)
             L_adv_G = alpha * (KL_min(mean_r_g, logvar_r_g) + KL_min(mean_pp_g, logvar_pp_g))
-            loss_G.append(L_adv_G + beta * L_ae)
+            loss_G.append(L_adv_G + L_ae)
 
             sum(loss_G).backward()
             optimizer_G.step()

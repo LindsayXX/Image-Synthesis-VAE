@@ -10,9 +10,12 @@ def l1_loss(x, y):
     return (x - y).abs().mean()
 
 def l2_loss(x, y, age=True):
-    loss = (x - y).pow(2).mean()
+    if age: # 1/(M*N)
+        loss = (x - y).pow(2)
+    else: # 1/N
+        loss = (x - y).pow(2).view(list(x.size())[0], -1).sum(dim=-1)
 
-    return loss
+    return loss.mean()
 
 
 class KL_Loss_AGE(nn.Module):
@@ -60,7 +63,7 @@ class KL_Loss_Intro(nn.Module):
         self.mean = mean
         self.logvar = logvar
         var = logvar.exp()
-        kl_loss = (1 + self.logvar - self.mean.pow(2) - var).sum(dim=-1)
+        kl_loss = (-1 - self.logvar + self.mean.pow(2) + var).mul_(0.5).sum(dim=-1)
         kl_loss = kl_loss.mean()
 
         if not self.minimize:
