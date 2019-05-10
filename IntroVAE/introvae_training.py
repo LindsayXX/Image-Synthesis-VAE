@@ -165,7 +165,7 @@ if __name__ == '__main__':
 
     for epoch in tqdm(range(NUM_EPOCH)):
         # --------- save model in every 100 epoches ----------
-        if epoch % 100:
+        if epoch % 100 == 0:
             state_E = {
                 'epoch': epoch,
                 'state_dict': intro_E.state_dict(),
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             optimizer_E.zero_grad()
             mean, logvar = intro_E(x)
             z = reparameterization(mean, logvar, ngpu)
-            z_p.data = sampling(batch_size, Z_DIM, sphere=False, intro=True)
+            z_p.data.copy_(sampling(batch_size, Z_DIM, sphere=False, intro=True))
             #z_p.data.copy_(sampling(batch_size, Z_DIM, sphere=False, intro=True))
             x_r = intro_G(z)
             x_p = intro_G(z_p)
