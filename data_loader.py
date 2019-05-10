@@ -13,10 +13,7 @@ import numpy as np
 this_root = os.path.abspath(os.path.dirname(__file__))
 
 
-def show(img):
-    npimg = img.detach().numpy()
-    plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation='nearest')
-    plt.show()
+
 
 
 def load_image(file_path, input_height=128, input_width=None, output_height=128, output_width=None,
