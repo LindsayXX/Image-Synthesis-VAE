@@ -13,6 +13,8 @@ from loss_functions import *
 from tools import *
 import sys
 import os
+import matplotlib.pyplot as plt
+import random
 
 def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgsz=128):
     os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
@@ -94,20 +96,40 @@ if __name__ == '__main__':
         print(f'Used device: {device}')
         ngpu = torch.cuda.device_count()
 
-    NUM_EPOCH = 100
+    cudnn.benchmark = True
+    random.seed(123)
     REC_LAMBDA = 1000
     REC_MU = 10
-    Z_DIM = 64
-    DROP_LR = 50
+    LR = 0.0002
+    # settings for cifar
+    NUM_EPOCH = 150
+    Z_DIM = 128
+    DROP_LR = 40
+    batch_size = 64
+    IM_DIM = 32
+    G_UPDATES = 2
+    save_model = 15
+    SAMPLE_BATCH = 64
+
+    # setting for celebA
+    '''
+    NUM_EPOCH = 5#
+    REC_LAMBDA = 1000
+    REC_MU = 10
+    Z_DIM = 128#64
+    DROP_LR = 5#50
     LR = 0.0002
     batch_size = 256
     IM_DIM = 128
     G_UPDATES = 3
-    save_model = 10
-    cudnn.benchmark = True
+    save_model = 1
+    SAMPLE_BATCH = 16
+    '''
 
-    root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
-    trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+    #root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
+    root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
+    #trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+    trainloader, model_dir, plot_dir = load_data('cifar', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
@@ -159,7 +181,7 @@ if __name__ == '__main__':
             enc_z.append(KL_z)
 
             x_rec = age_G(z)
-            x_rec_loss = REC_MU*l1_loss(x, x_rec)
+            x_rec_loss = REC_MU * l1_loss(x, x_rec)
             loss_E.append(x_rec_loss)
             enc_rec_x.append(x_rec_loss)
 
@@ -207,7 +229,7 @@ if __name__ == '__main__':
             ########
 
         if epoch % save_model == (save_model - 1):
-            age_im_gen(age_G, 16, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
+            age_im_gen(age_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
             state_E = {
                 'epoch': epoch,
                 'state_dict': age_E.state_dict(),

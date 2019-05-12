@@ -46,20 +46,20 @@ class Res_Block(nn.Module):
 
 
         elif self.sample == -1: # for encoder, out_ch should be in_ch * 2
-            residual = self.addon(input)
+            identity = self.addon(input)
             output = self.relu(self.bn(self.conv1(input)))
             output = self.conv2(output)
-            output += residual
+            output += identity
             if self.avg == True:
                 output = self.avgpool(output)
 
         else: # for generator, out_ch should be in_ch/2
             if self.upsample:
                 input = self.upsample_layer(input)
-            residual = self.addon(input)
+            identity = self.addon(input)
             output = self.relu(self.bn(self.conv1(input)))
             output = self.conv2(output)
-            output += residual
+            output += identity
             output = self.relu(self.bn(output))
 
         return output
