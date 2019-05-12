@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 import torch
 import torchvision
-import torchvision.transforms as transforms
+from torchvision import transforms, datasets
 import torch.optim as optim
 import torch.utils.data as data
 import torch.backends.cudnn as cudnn
@@ -14,52 +14,107 @@ from tools import *
 import sys
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1"
+def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgsz=128):
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
 
-root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-if not os.path.exists('age_model_cifar'):
-    os.mkdir('age_model_cifar')
-if not os.path.exists('age_plot_cifar'):
-    os.mkdir('age_plot_cifar')
-model_dir = os.path.join(root_dir, 'age_model_cifar')
-plot_dir = os.path.join(root_dir, 'age_plot_cifar')
+    root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    if not os.path.exists(f'age_model_{dataset}'):
+        os.mkdir(f'age_model_{dataset}')
+    if not os.path.exists(f'age_plot_{dataset}'):
+        os.mkdir(f'age_plot_{dataset}')
+    model_dir = os.path.join(root_dir, f'age_model_{dataset}')
+    plot_dir = os.path.join(root_dir, f'age_plot_{dataset}')
+
+    if dataset == 'cifar':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
+        # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+        # trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+        # indice = list(range(0, 10000))
+        # sampler=data.SubsetRandomSampler(indice)
+        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
+                                      drop_last=True)
+        # testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+        # testset_sub = torch.utils.data.SubsetRandomSampler(indice)
+        # testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
+
+    if dataset == 'SVHN':
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download=True)
+        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
+                                      drop_last=True)
+
+    if dataset == 'celebA':
+        transform = transforms.Compose([
+            # transforms.RandomSizedCrop(224),
+            # transforms.RandomHorizontalFlip(),
+            transforms.Resize([imgsz, imgsz]),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+
+        db = datasets.ImageFolder(root, transform=transform)
+        #indice = list(range(0, 10))
+        #try_sampler = data.SubsetRandomSampler(indice)
+        #train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_worker, drop_last=True)#, sampler=try_sampler)
+        #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
+
+    return trainloader, model_dir, plot_dir
 
 if __name__ == '__main__':
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(f'Cuda available: {torch.cuda.is_available()}')
-    print(f'Current device number: {torch.cuda.current_device()}')
-    print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
-    print(f'Number of GPUs: {torch.cuda.device_count()}')
-    print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
-    print(f'Used device: {device}')
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-    #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
-    #indice = list(range(0, 10000))
-    # sampler=data.SubsetRandomSampler(indice)
-    #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
-    trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
-    #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-    #testset_sub = torch.utils.data.SubsetRandomSampler(indice)
-    #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
-    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    # print(f'Cuda available: {torch.cuda.is_available()}')
+    # print(f'Current device number: {torch.cuda.current_device()}')
+    # print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
+    # print(f'Number of GPUs: {torch.cuda.device_count()}')
+    # print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
+    # print(f'Used device: {device}')
+    # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    # trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
+    # #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
+    # #indice = list(range(0, 10000))
+    # # sampler=data.SubsetRandomSampler(indice)
+    # #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
+    # trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
+    # #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+    # #testset_sub = torch.utils.data.SubsetRandomSampler(indice)
+    # #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
+    # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    NUM_EPOCH = 150
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        print(f'Cuda available: {torch.cuda.is_available()}')
+        print(f'Current device number: {torch.cuda.current_device()}')
+        print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
+        print(f'Number of GPUs: {torch.cuda.device_count()}')
+        print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
+        print(f'Used device: {device}')
+        ngpu = torch.cuda.device_count()
+
+    NUM_EPOCH = 100
     REC_LAMBDA = 1000
     REC_MU = 10
-    Z_DIM = 128
-    DROP_LR = 40
+    Z_DIM = 64
+    DROP_LR = 50
     LR = 0.0002
-    batch_size = 64
-    ngpu = 2
+    batch_size = 256
+    IM_DIM = 128
+    G_UPDATES = 3
+    save_model = 10
     cudnn.benchmark = True
 
-    age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu).to(device)
-    age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
+    root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
+    trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+
+    age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
+    age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
     age_E.apply(weights_init)
     age_G.apply(weights_init)
 
-    x = torch.FloatTensor(batch_size, 3, 32, 32).to(device)
+    x = torch.FloatTensor(batch_size, 3, IM_DIM, IM_DIM).to(device)
     z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
     x = Variable(x)
     z_sample = Variable(z_sample)
@@ -90,18 +145,6 @@ if __name__ == '__main__':
             for param_group in age_optim_G.param_groups:
                 param_group['lr'] = LR
 
-            state_E = {
-                'epoch': epoch,
-                'state_dict': age_E.state_dict(),
-                'optimizer': age_optim_E.state_dict(),
-            }
-            state_G = {
-                'epoch': epoch,
-                'state_dict': age_G.state_dict(),
-                'optimizer': age_optim_G.state_dict(),
-            }
-            torch.save(state_E, f"{model_dir}/encoder_{epoch}")
-            torch.save(state_G, f"{model_dir}/generator_{epoch}")
         for i, data in enumerate(trainloader, 0):
             input, label = data
             x.data.copy_(input)
@@ -136,7 +179,7 @@ if __name__ == '__main__':
                 print(f'Encoder: KL z: {KL_z}, Rec x loss: {x_rec_loss}, KL fake z: {KL_z_fake}')
 
             # Update generator
-            for g_i in range(2):
+            for g_i in range(G_UPDATES):
                 loss_G = []
                 age_optim_G.zero_grad()
 
@@ -156,6 +199,27 @@ if __name__ == '__main__':
             if i == 0:
                 print(f'Generator: KL fake z: {KL_z_fake}, Rec z loss: {z_rec_loss}')
                 print('--------------------------------')
+
+            # Clear GPU ??????
+            if epoch == 0 and i == 0:
+                torch.cuda.empty_cache()
+            #torch.cuda.empty_cache()
+            ########
+
+        if epoch % save_model == (save_model - 1):
+            age_im_gen(age_G, 16, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
+            state_E = {
+                'epoch': epoch,
+                'state_dict': age_E.state_dict(),
+                'optimizer': age_optim_E.state_dict(),
+            }
+            state_G = {
+                'epoch': epoch,
+                'state_dict': age_G.state_dict(),
+                'optimizer': age_optim_G.state_dict(),
+            }
+            torch.save(state_E, f"{model_dir}/encoder_{epoch}")
+            torch.save(state_G, f"{model_dir}/generator_{epoch}")
 
     state_E = {
         'epoch': epoch,

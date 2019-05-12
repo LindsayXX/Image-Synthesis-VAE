@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.utils as vutils
 
 def weights_init(m):
     '''
@@ -33,10 +34,12 @@ def sampling(batch_size, z_dim, sphere=True, intro=False):
 
     return samples
 
-def im_gen():
-    #TODO generate images given model
-
-    return 0
+def age_im_gen(generator, batch_size, z_dim, device, path):
+    generator.eval()
+    z_s = sampling(batch_size, z_dim).to(device)
+    x_fake = generator(z_s).cpu()
+    vutils.save_image(x_fake / 2 + 0.5, path)
+    generator.train()
 
 def im_show(img):
     img = img / 2 + 0.5     # unnormalize
