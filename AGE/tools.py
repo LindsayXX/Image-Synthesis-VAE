@@ -41,6 +41,13 @@ def age_im_gen(generator, batch_size, z_dim, device, path):
     vutils.save_image(x_fake / 2 + 0.5, path)
     generator.train()
 
+def vae_im_gen(generator, batch_size, z_dim, device, path):
+    generator.eval()
+    z_s = sampling(batch_size, z_dim, sphere=False, intro=True).to(device)
+    x_fake = generator(z_s).cpu()
+    vutils.save_image(x_fake / 2 + 0.5, path)
+    generator.train()
+
 def im_show(img):
     img = img / 2 + 0.5     # unnormalize
     npimg = img.numpy()

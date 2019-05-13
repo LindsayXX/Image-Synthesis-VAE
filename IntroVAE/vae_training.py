@@ -15,7 +15,6 @@ import os
 import sys
 
 def load_model(IMG_DIM, Z_DIM, ngpu, model_dir):
-    # TODO code for load the models
     intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
     intro_G = Intro_gen(z_dim=Z_DIM, ngpu=ngpu).to(device)
     checkpoint_E = torch.load(model_dir+'encoder_')
@@ -39,11 +38,11 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_wor
     os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
     root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
     if not os.path.exists('intro_model_{}'.format(dataset)):
-        os.mkdir('Intro_model_{}'.format(dataset))
+        os.mkdir('VAE_model_{}'.format(dataset))
     if not os.path.exists('Intro_plot_{}'.format(dataset)):
-        os.mkdir('Intro_plot_{}'.format(dataset))
-    model_dir = os.path.join(root_dir, 'Intro_model_{}'.format(dataset))
-    plot_dir = os.path.join(root_dir, 'Intro_plot_{}'.format(dataset))
+        os.mkdir('VAE_plot_{}'.format(dataset))
+    model_dir = os.path.join(root_dir, 'VAE_model_{}'.format(dataset))
+    plot_dir = os.path.join(root_dir, 'VAE_plot_{}'.format(dataset))
 
     if dataset == 'cifar':
         transform = transforms.Compose([transforms.ToTensor(),
@@ -130,8 +129,6 @@ if __name__ == '__main__':
     LR = 0.0002
     #weight_rec = 0.05
     batch_size = 8 #16
-    alpha = 0.25
-    beta = 0.5
     M = 110
     save_model = 1
     SAMPLE_BATCH = 16
@@ -189,50 +186,37 @@ if __name__ == '__main__':
 
 
     KL_min = KL_Loss_Intro(minimize=True)
-    KL_max = KL_Loss_Intro(minimize=False)
+    # KL_max = KL_Loss_Intro(minimize=False)
     # loss_l1 = nn.L1Loss()
     # loss_l2 = nn.MSELoss()
+    enc_z = []
+    rec_x = []
 
     for epoch in tqdm(range(NUM_EPOCH)):
+        # --------- save model in every 100 epoches ----------
         for i, data in enumerate(trainloader, 0):
-            print('Batch:',i)
+            #print('Batch:',i)
             input, label = data
             x.data.copy_(input)
 
             # ----- update the encoder -------
-            loss_E = []
+            loss_vae = []
             optimizer_E.zero_grad()
+            optimizer_G.zero_grad()
             mean, logvar = intro_E(x)
             z = reparameterization(mean, logvar, ngpu)
-            z_p.data.copy_(sampling(batch_size, Z_DIM, sphere=False, intro=True))
-            #z_p.data.copy_(sampling(batch_size, Z_DIM, sphere=False, intro=True))
             x_r = intro_G(z)
-            x_p = intro_G(z_p)
-            L_ae = beta * l2_loss(x_r, x, age=False)
-            loss_E.append(L_ae)
-            mean_r, logvar_r = intro_E(x_r.detach())
-            #z_r = reparameterization(mean_r, logvar_r)
-            mean_pp, logvar_pp = intro_E(x_p.detach())
-            #z_pp = reparameterization(mean_pp, logvar_pp)
-            loss_E.append(KL_min(mean, logvar))
-            # max(0, x) = ReLu(x)
-            L_adv_E = (F.relu(M + KL_max(mean_r, logvar_r)) + F.relu(M + KL_max(mean_pp, logvar_pp))).mul(alpha)
-            loss_E.append(L_adv_E)
+            L_ae = l2_loss(x_r, x, age=False)
+            loss_vae.append(L_ae)
+            KL_z = KL_min(mean, logvar)
+            loss_vae.append(KL_z)
+            rec_x.append(L_ae)
+            enc_z.append(KL_z)
 
-            sum(loss_E).backward(retain_graph=True) # keep the variable after doing back`ward, for the backprop of Generator
+            sum(loss_vae).backward()
             optimizer_E.step()
-
-            # ----- update the generator/decoder -------
-            loss_G = []
-            optimizer_G.zero_grad()
-            mean_r_g, logvar_r_g = intro_E(x_r)
-            mean_pp_g, logvar_pp_g = intro_E(x_p)
-            L_adv_G = alpha * (KL_min(mean_r_g, logvar_r_g) + KL_min(mean_pp_g, logvar_pp_g))
-            loss_G.append(L_adv_G + L_ae)
-
-            sum(loss_G).backward()
             optimizer_G.step()
-        # --------- save model in every {save_model} epoches ----------
+
         if epoch % save_model == (save_model - 1):
             vae_im_gen(intro_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
             state_E = {
@@ -262,4 +246,16 @@ if __name__ == '__main__':
     }
     torch.save(state_E, f"{model_dir}/encoder_{epoch}")
     torch.save(state_G, f"{model_dir}/generator_{epoch}")
+
+    plt.plot(enc_z, label='Encoder KL z')
+    np.asarray(enc_z).dump(f"{plot_dir}/enc_z.dat")
+    plt.legend()
+    plt.savefig(f"{plot_dir}/encoder_KL")
+    plt.close()
+
+    plt.plot(rec_x, label='x recon')
+    np.asarray(rec_x).dump(f"{plot_dir}/rec_x.dat")
+    plt.legend()
+    plt.savefig(f"{plot_dir}/rec_x")
+    plt.close()
 

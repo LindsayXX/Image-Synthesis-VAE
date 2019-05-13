@@ -248,6 +248,7 @@ if __name__ == '__main__':
             torch.save(state_E, f"{model_dir}/encoder_{epoch}")
             torch.save(state_G, f"{model_dir}/generator_{epoch}")
 
+    age_im_gen(age_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
     state_E = {
         'epoch': epoch,
         'state_dict': age_E.state_dict(),
