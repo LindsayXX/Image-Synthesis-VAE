@@ -15,6 +15,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import random
+import numpy as np
 
 def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgsz=128):
     os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
@@ -261,22 +262,27 @@ if __name__ == '__main__':
     torch.save(state_G, f"{model_dir}/generator_{epoch}")
 
     plt.plot(enc_z, label='Encoder KL z')
+    np.asarray(enc_z).dump(f"{plot_dir}/enc_z.dat")
     plt.plot(enc_fake_z, label='Encoder KL fake z')
+    np.asarray(enc_fake_z).dump(f"{plot_dir}/enc_fake_z.dat")
     plt.legend()
     plt.savefig(f"{plot_dir}/encoder_KL")
     plt.close()
 
     plt.plot(gen_fake_z, label='Generator KL fake z')
+    np.asarray(gen_fake_z).dump(f"{plot_dir}/gen_fake_z.dat")
     plt.legend()
     plt.savefig(f"{plot_dir}/generator_KL")
     plt.close()
 
     plt.plot(enc_rec_x, label='Encoder x recon')
+    np.asarray(enc_rec_x).dump(f"{plot_dir}/enc_rec_x.dat")
     plt.legend()
     plt.savefig(f"{plot_dir}/encoder_rec")
     plt.close()
 
     plt.plot(gen_rec_z, label='Generator z recon')
+    np.asarray(gen_rec_z).dump(f"{plot_dir}/gen_rec_z.dat")
     plt.legend()
     plt.savefig(f"{plot_dir}/generator_rec")
     plt.close()
