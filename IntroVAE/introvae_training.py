@@ -8,9 +8,9 @@ import torch.utils.data as data
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from IntroVAE.introvae_networks import *
-from AGE.loss_functions import *
-from AGE.tools import *
+from introvae_networks import *
+from loss_functions import *
+from tools import *
 import os
 import sys
 
@@ -79,10 +79,10 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_wor
                                  std=[0.229, 0.224, 0.225])])
 
         db = datasets.ImageFolder(root, transform=transform)
-        indice = list(range(0, 10))
-        try_sampler = data.SubsetRandomSampler(indice)
-        train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
-        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, num_workers=num_worker, sampler=try_sampler)
+        #indice = list(range(0, 10))
+        #try_sampler = data.SubsetRandomSampler(indice)
+        #train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True, drop_last=True)
         #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
 
         if imgsz == 128:
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     --m_plus=1000 --weight_rec=1.0  --num_vae=10
     """
     cudnn.benchmark = True
-    NUM_EPOCH = 2 #500
+    NUM_EPOCH = 10 #500
     LR = 0.0002
     #weight_rec = 0.05
     batch_size = 8 #16
@@ -154,7 +154,7 @@ if __name__ == '__main__':
         ngpu = torch.cuda.device_count()
         root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
         # trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
-        trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, imgsz=256, num_worker=0)
+        trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, imgsz=128, num_worker=0)
 
     else:
         device = torch.device('cpu')
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         ngpu = 0
         root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
         trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebAtest', root=root_dir, batch_size=batch_size,
-                                                                     imgsz=256, num_worker=4)
+                                                                     imgsz=256, num_worker=0)
 
 
     # ------- build model -----------
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
     for epoch in tqdm(range(NUM_EPOCH)):
         for i, data in enumerate(trainloader, 0):
-            print('Batch:',i)
+            #print('Batch:',i)
             input, label = data
             x.data.copy_(input)
 
