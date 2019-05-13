@@ -58,44 +58,30 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgs
                                  std=[0.229, 0.224, 0.225])])
 
         db = datasets.ImageFolder(root, transform=transform)
-        #indice = list(range(0, 10))
-        #try_sampler = data.SubsetRandomSampler(indice)
         #train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
-        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_worker, drop_last=True)#, sampler=try_sampler)
-        #trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, num_workers=num_worker)
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_worker, drop_last=True)
+
+    if dataset == 'celebAtest':
+        transform = transforms.Compose([
+            # transforms.RandomSizedCrop(224),
+            # transforms.RandomHorizontalFlip(),
+            transforms.Resize([imgsz, imgsz]),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+
+        db = datasets.ImageFolder(root, transform=transform)
+        indice = list(range(0, 200))
+        try_sampler = data.SubsetRandomSampler(indice)
+        # train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=num_worker,
+                                      drop_last=True, sampler=try_sampler)
+
+    print(f'finish loading {dataset} data!')
 
     return trainloader, model_dir, plot_dir
 
 if __name__ == '__main__':
-    # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    # print(f'Cuda available: {torch.cuda.is_available()}')
-    # print(f'Current device number: {torch.cuda.current_device()}')
-    # print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
-    # print(f'Number of GPUs: {torch.cuda.device_count()}')
-    # print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
-    # print(f'Used device: {device}')
-    # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    # trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-    # #trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
-    # #indice = list(range(0, 10000))
-    # # sampler=data.SubsetRandomSampler(indice)
-    # #trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download =True)
-    # trainloader = data.DataLoader(trainset, batch_size=64, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
-    # #testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-    # #testset_sub = torch.utils.data.SubsetRandomSampler(indice)
-    # #testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
-    # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-    if torch.cuda.is_available():
-        device = torch.device('cuda:0')
-        print(f'Cuda available: {torch.cuda.is_available()}')
-        print(f'Current device number: {torch.cuda.current_device()}')
-        print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
-        print(f'Number of GPUs: {torch.cuda.device_count()}')
-        print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
-        print(f'Used device: {device}')
-        ngpu = torch.cuda.device_count()
-
     cudnn.benchmark = True
     random.seed(123)
     REC_LAMBDA = 1000
@@ -118,7 +104,6 @@ if __name__ == '__main__':
     REC_MU = 10
     Z_DIM = 128#64
     DROP_LR = 5#50
-    LR = 0.0002
     batch_size = 256
     IM_DIM = 128
     G_UPDATES = 3
@@ -126,10 +111,29 @@ if __name__ == '__main__':
     SAMPLE_BATCH = 16
     '''
 
-    #root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
-    root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
-    #trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
-    trainloader, model_dir, plot_dir = load_data('cifar', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        print(f'Cuda available: {torch.cuda.is_available()}')
+        print(f'Current device number: {torch.cuda.current_device()}')
+        print(f'Current device: {torch.cuda.device(torch.cuda.current_device())}')
+        print(f'Number of GPUs: {torch.cuda.device_count()}')
+        print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
+        print(f'Used device: {device}')
+        ngpu = torch.cuda.device_count()
+        root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
+        # trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+        trainloader, model_dir, plot_dir = load_data('cifar', root=root, batch_size=batch_size, num_worker=0,
+                                                     imgsz=IM_DIM)
+
+    else:
+        device = torch.device('cpu')
+        print(f'Used device: {device}')
+        ngpu = 0
+        root = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
+        # root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
+        trainloader, model_dir, plot_dir = load_data('celebAtest', root=root, batch_size=batch_size, num_worker=0,
+                                                     imgsz=IM_DIM)
+
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)

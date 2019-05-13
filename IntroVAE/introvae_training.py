@@ -59,6 +59,9 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_wor
         # testset_sub = torch.utils.data.SubsetRandomSampler(indice)
         # testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
 
+        imgsz = 64
+        z_dim = 128
+
     if dataset == 'SVHN':
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -87,6 +90,29 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_wor
         elif imgsz == 256:
             z_dim = 512
 
+    if dataset == 'celebAtest':
+        transform = transforms.Compose([
+            # transforms.RandomSizedCrop(224),
+            # transforms.RandomHorizontalFlip(),
+            transforms.Resize([imgsz, imgsz]),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+
+        db = datasets.ImageFolder(root, transform=transform)
+        indice = list(range(0, 200))
+        try_sampler = data.SubsetRandomSampler(indice)
+        # train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
+        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=num_worker,
+                                      drop_last=True, sampler=try_sampler)
+
+        if imgsz == 128:
+            z_dim = 256
+        elif imgsz == 256:
+            z_dim = 512
+
+    print(f'finish loading {dataset} data!')
+
     return trainloader, imgsz, z_dim, model_dir, plot_dir
 
 
@@ -99,6 +125,7 @@ if __name__ == '__main__':
     or
     --m_plus=1000 --weight_rec=1.0  --num_vae=10
     """
+    cudnn.benchmark = True
     NUM_EPOCH = 2 #500
     LR = 0.0002
     weight_rec = 0.05
@@ -114,8 +141,6 @@ if __name__ == '__main__':
     M = 110
     '''
 
-    cudnn.benchmark = True
-
     if torch.cuda.is_available():
         device = torch.device('cuda:0')
         print(f'Cuda available: {torch.cuda.is_available()}')
@@ -125,15 +150,18 @@ if __name__ == '__main__':
         print(f'Current device name: {torch.cuda.get_device_name(torch.cuda.current_device())}')
         print(f'Used device: {device}')
         ngpu = torch.cuda.device_count()
+        root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
+        # trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
+        trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, imgsz=256, num_worker=0)
 
     else:
         device = torch.device('cpu')
         print(f'Used device: {device}')
         ngpu = 0
+        root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
+        trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebAtest', root=root_dir, batch_size=batch_size,
+                                                                     imgsz=256, num_worker=4)
 
-
-    root_dir = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
-    trainloader, IMG_DIM, Z_DIM, model_dir, plot_dir = load_data('celebA', root=root_dir, batch_size=batch_size, imgsz=256, num_worker=4)
 
     # ------- build model -----------
     intro_E = Intro_enc(img_dim=IMG_DIM, z_dim=Z_DIM, ngpu=ngpu).to(device)
