@@ -135,6 +135,7 @@ if __name__ == '__main__':
     M = 110
     save_model = 1
     SAMPLE_BATCH = 16
+    PRINT_STATS = 500
     '''
     IMG_DIM = 128
     Z_DIM = 256
@@ -214,7 +215,8 @@ if __name__ == '__main__':
             #z_r = reparameterization(mean_r, logvar_r)
             mean_pp, logvar_pp = intro_E(x_p.detach())
             #z_pp = reparameterization(mean_pp, logvar_pp)
-            loss_E.append(KL_min(mean, logvar))
+            KL_z = KL_min(mean, logvar)
+            loss_E.append(KL_z)
             # max(0, x) = ReLu(x)
             L_adv_E = (F.relu(M + KL_max(mean_r, logvar_r)) + F.relu(M + KL_max(mean_pp, logvar_pp))).mul(alpha)
             loss_E.append(L_adv_E)
@@ -232,6 +234,13 @@ if __name__ == '__main__':
 
             sum(loss_G).backward()
             optimizer_G.step()
+
+            if i % PRINT_STATS == (PRINT_STATS - 1):
+                print('--------------------------')
+                print(f'Epoch: {epoch}, Batch: {i}')
+                print(f'KL Z: {KL_z}')
+                print(f'Rec x: {L_ae}')
+                print('--------------------------')
         # --------- save model in every {save_model} epoches ----------
         if epoch % save_model == (save_model - 1):
             vae_im_gen(intro_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
