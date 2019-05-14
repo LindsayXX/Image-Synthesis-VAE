@@ -89,6 +89,7 @@ if __name__ == '__main__':
     REC_MU = 10
     LR = 0.0002
     # settings for cifar
+    '''
     NUM_EPOCH = 150
     Z_DIM = 128
     DROP_LR = 40
@@ -97,20 +98,22 @@ if __name__ == '__main__':
     G_UPDATES = 2
     save_model = 15
     SAMPLE_BATCH = 64
+    '''
 
     # setting for celebA
-    '''
     NUM_EPOCH = 5#
     REC_LAMBDA = 1000
     REC_MU = 10
-    Z_DIM = 128#64
+    Z_DIM = 64
     DROP_LR = 5#50
-    batch_size = 256
+    batch_size = 68
     IM_DIM = 128
     G_UPDATES = 3
     save_model = 1
     SAMPLE_BATCH = 16
-    '''
+
+    START_EPOCH = 5
+    LOAD_MODEL = True
 
     if torch.cuda.is_available():
         device = torch.device('cuda:0')
@@ -123,7 +126,7 @@ if __name__ == '__main__':
         ngpu = torch.cuda.device_count()
         root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
         # trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
-        trainloader, model_dir, plot_dir = load_data('cifar', root=root, batch_size=batch_size, num_worker=0,
+        trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0,
                                                      imgsz=IM_DIM)
 
     else:
@@ -138,8 +141,6 @@ if __name__ == '__main__':
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
-    age_E.apply(weights_init)
-    age_G.apply(weights_init)
 
     x = torch.FloatTensor(batch_size, 3, IM_DIM, IM_DIM).to(device)
     z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
@@ -153,6 +154,18 @@ if __name__ == '__main__':
 
     age_optim_E = optim.Adam(age_E.parameters(), lr=LR, betas=(0.5, 0.999))
     age_optim_G = optim.Adam(age_G.parameters(), lr=LR, betas=(0.5, 0.999))
+
+    if not LOAD_MODEL:
+        age_E.apply(weights_init)
+        age_G.apply(weights_init)
+    else:
+        checkpoint_E = torch.load(f"{model_dir}/encoder_{START_EPOCH - 1}")
+        checkpoint_G = torch.load(f"{model_dir}/generator_{START_EPOCH - 1}")
+        age_E.load_state_dict(checkpoint_E['state_dict'])
+        age_G.load_state_dict(checkpoint_G['state_dict'])
+        age_optim_E.load_state_dict(checkpoint_E['optimizer'])
+        age_optim_G.load_state_dict(checkpoint_G['optimizer'])
+
 
     enc_z = []
     enc_fake_z = []
