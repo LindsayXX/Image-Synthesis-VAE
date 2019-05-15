@@ -29,10 +29,16 @@ def load_model(IMG_DIM, Z_DIM, ngpu, model_dir):
     return intro_E, intro_G
 
 
-def reparameterization(mean, logvar, ngpu=1, device = 'cuda:0'):
+def reparameterization(mean, logvar, ngpu=1, device = 'cuda:0', opt_batch=0, opt_z_dim = 0):
+    if opt_batch != 0:
+        batch = opt_batch
+        zdim = opt_z_dim
+    else:
+        batch = batch_size
+        zdim = Z_DIM
     # z = mu + sigma.mul(eps)
     std = logvar.mul(0.5).exp_()
-    eps = torch.FloatTensor(batch_size, Z_DIM).normal_().to(device)
+    eps = torch.FloatTensor(batch, zdim).normal_().to(device)
     z = eps.mul(std).add_(mean)
 
     return z #.unsqueeze_(-1).unsqueeze_(-1)
@@ -141,7 +147,7 @@ if __name__ == '__main__':
     PRINT_STATS = 2000
 
     # If load model
-    START_EPOCH = 2
+    START_EPOCH = 9
     LOAD_MODEL = True
     '''
     IMG_DIM = 128
