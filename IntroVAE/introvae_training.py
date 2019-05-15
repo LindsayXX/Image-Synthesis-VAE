@@ -252,7 +252,7 @@ if __name__ == '__main__':
             optimizer_E.zero_grad()
             optimizer_G.zero_grad()
             sum(loss_E).backward(retain_graph=True) # keep the variable after doing back`ward, for the backprop of Generator
-            #optimizer_E.step()
+            optimizer_E.step()
 
             # ----- update the generator/decoder -------
             loss_G = []
@@ -266,7 +266,7 @@ if __name__ == '__main__':
             gen_fake_z.append(KL_gen_fake.cpu().data)
 
             sum(loss_G).backward()
-            #optimizer_G.step()
+            optimizer_G.step()
 
             if i % PRINT_STATS == (PRINT_STATS - 1):
                 print('--------------------------')
