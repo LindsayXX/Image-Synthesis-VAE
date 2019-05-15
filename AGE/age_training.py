@@ -85,8 +85,8 @@ def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgs
 if __name__ == '__main__':
     cudnn.benchmark = True
     random.seed(123)
-    REC_LAMBDA = 1000
-    REC_MU = 10
+    #REC_LAMBDA = 1000
+    #REC_MU = 10
     LR = 0.0002
     # settings for cifar
     '''
@@ -101,19 +101,19 @@ if __name__ == '__main__':
     '''
 
     # setting for celebA
-    NUM_EPOCH = 5#
-    REC_LAMBDA = 1000
-    REC_MU = 10
+    NUM_EPOCH = 100#
+    REC_LAMBDA = 0
+    REC_MU = 0
     Z_DIM = 64
-    DROP_LR = 5#50
-    batch_size = 68
+    DROP_LR = 50#50
+    batch_size = 64
     IM_DIM = 128
     G_UPDATES = 3
-    save_model = 1
+    save_model = 10
     SAMPLE_BATCH = 16
 
-    START_EPOCH = 5
-    LOAD_MODEL = True
+    START_EPOCH = 0
+    LOAD_MODEL = False
 
     if torch.cuda.is_available():
         device = torch.device('cuda:0')
