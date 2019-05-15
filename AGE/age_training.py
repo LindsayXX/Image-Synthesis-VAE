@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
     # setting for celebA
     NUM_EPOCH = 100#
-    REC_LAMBDA = 0
-    REC_MU = 0
+    REC_LAMBDA = 1000
+    REC_MU = 10
     Z_DIM = 64
     DROP_LR = 50#50
     batch_size = 64

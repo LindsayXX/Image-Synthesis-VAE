@@ -8,9 +8,9 @@ import torch.utils.data as data
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from IntroVAE.introvae_networks import *
-from AGE.loss_functions import *
-from AGE.tools import *
+from introvae_networks import *
+from loss_functions import *
+from tools import *
 import os
 import sys
 
@@ -37,9 +37,9 @@ def reparameterization(mean, logvar, ngpu=1):
 def load_data(dataset='celebA', root='.\data', batch_size=16, imgsz=128, num_worker=4):
     os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
     root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-    if not os.path.exists('intro_model_{}'.format(dataset)):
+    if not os.path.exists('VAE_model_{}'.format(dataset)):
         os.mkdir('VAE_model_{}'.format(dataset))
-    if not os.path.exists('Intro_plot_{}'.format(dataset)):
+    if not os.path.exists('VAE_plot_{}'.format(dataset)):
         os.mkdir('VAE_plot_{}'.format(dataset))
     model_dir = os.path.join(root_dir, 'VAE_model_{}'.format(dataset))
     plot_dir = os.path.join(root_dir, 'VAE_plot_{}'.format(dataset))
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     LR = 0.0002
     #weight_rec = 0.05
     batch_size = 8 #16
-    M = 110
+    #M = 110
     save_model = 1
     SAMPLE_BATCH = 16
     '''

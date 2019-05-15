@@ -129,7 +129,7 @@ if __name__ == '__main__':
     --m_plus=1000 --weight_rec=1.0  --num_vae=10
     """
     cudnn.benchmark = True
-    NUM_EPOCH = 30 #500
+    NUM_EPOCH = 50 #500
     LR = 0.0002
     #weight_rec = 0.05
     batch_size = 8 #16
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     PRINT_STATS = 2000
 
     # If load model
-    START_EPOCH = 20
+    START_EPOCH = 2
     LOAD_MODEL = True
     '''
     IMG_DIM = 128
