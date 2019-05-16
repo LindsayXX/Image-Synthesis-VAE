@@ -135,20 +135,20 @@ if __name__ == '__main__':
     --m_plus=1000 --weight_rec=1.0  --num_vae=10
     """
     cudnn.benchmark = True
-    NUM_EPOCH = 50 #500
+    NUM_EPOCH = 20 #500
     LR = 0.0002
     #weight_rec = 0.05
     batch_size = 8 #16
     alpha = 0.25
-    beta = 0.5
-    M = 110
+    beta = 0.05
+    M = 90
     save_model = 1
     SAMPLE_BATCH = 16
     PRINT_STATS = 2000
 
     # If load model
-    START_EPOCH = 9
-    LOAD_MODEL = True
+    START_EPOCH = 0
+    LOAD_MODEL = False
     '''
     IMG_DIM = 128
     Z_DIM = 256
@@ -287,6 +287,7 @@ if __name__ == '__main__':
         # --------- save model in every {save_model} epoches ----------
         if epoch % save_model == (save_model - 1):
             vae_im_gen(intro_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
+            vae_im_rec(intro_E, intro_G, x, f'{model_dir}/rec_{epoch}.png', ngpu, Z_DIM=Z_DIM, data='celebA')
             state_E = {
                 'epoch': epoch,
                 'state_dict': intro_E.state_dict(),
@@ -302,6 +303,7 @@ if __name__ == '__main__':
 
     # ---------- save model -------------
     vae_im_gen(intro_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
+    vae_im_rec(intro_E, intro_G, x, f'{model_dir}/rec_{epoch}.png', ngpu, Z_DIM=Z_DIM, data='celebA')
     state_E = {
         'epoch': epoch,
         'state_dict': intro_E.state_dict(),
