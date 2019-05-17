@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as vutils
-from introvae_training import *
 
 def weights_init(m):
     '''
@@ -47,6 +46,26 @@ def age_im_gen(generator, batch_size, z_dim, device, path, data = 'celebA'):
         for i in range(list(mean1.size())[0]):
             x_fake[:, i, :, :] = x_fake[:, i, :, :].mul(std1[i]).add(mean1[i])
         vutils.save_image(x_fake.cpu(), path)
+    generator.train()
+
+def age_im_rec(encoder, generator, input, device, z_dim, path, data = 'celebA'):
+    encoder.eval()
+    generator.eval()
+    z = encoder(input)
+    x_rec = generator(z)
+    t = torch.FloatTensor(input.size(0) * 2, input.size(1), input.size(2), input.size(3))
+    t[0::2] = input.data.cpu()[:]
+    t[1::2] = x_rec.data.cpu()[:]
+
+    if data == 'cifar':
+        vutils.save_image(t / 2 + 0.5, path)
+    else:
+        mean1 = torch.FloatTensor([0.485, 0.456, 0.406])
+        std1 = torch.FloatTensor([0.229, 0.224, 0.225])
+        for i in range(list(mean1.size())[0]):
+            t[:, i, :, :] = t[:, i, :, :].mul(std1[i]).add(mean1[i])
+        vutils.save_image(t.cpu(), path)
+    encoder.train()
     generator.train()
 
 def vae_im_gen(generator, batch_size, z_dim, device, path, data = 'celebA'):

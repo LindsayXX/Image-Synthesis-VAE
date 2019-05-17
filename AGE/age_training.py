@@ -106,14 +106,14 @@ if __name__ == '__main__':
     REC_MU = 10
     Z_DIM = 64
     DROP_LR = 50#50
-    batch_size = 64
+    batch_size = 8
     IM_DIM = 128
     G_UPDATES = 3
     save_model = 10
     SAMPLE_BATCH = 16
 
-    START_EPOCH = 0
-    LOAD_MODEL = False
+    START_EPOCH = 2
+    LOAD_MODEL = True
 
     if torch.cuda.is_available():
         device = torch.device('cuda:0')
