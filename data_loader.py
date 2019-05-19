@@ -1,19 +1,13 @@
 import os
-import matplotlib.pyplot as plt
 import torch
 import torch.utils.data as data
 from os.path import join
 from PIL import Image, ImageOps
 import random
 import torchvision.transforms as transforms
-from torchvision import datasets
-import torchvision
-import numpy as np
+
 
 this_root = os.path.abspath(os.path.dirname(__file__))
-
-
-
 
 
 def load_image(file_path, input_height=128, input_width=None, output_height=128, output_width=None,
@@ -69,10 +63,21 @@ def get_list_filenames(root_path):
 
 
 class Dataset(data.Dataset):
-    def __init__(self, root_path, filename = '1000_fake_tensor_cifar_10', dataset_type='celeba', input_height=128,
+    def __init__(self, root_path, filename='1000_fake_tensor_cifar_10', dataset_type='celeba', input_height=128,
                  crop_height=None, crop_width=None, is_random_crop=False, is_mirror=True,
                  is_gray=False):
+        """
 
+        :param root_path: Path to the directory of the dataset
+        :param filename: Name of the file
+        :param dataset_type: Which dataset we are referring to
+        :param input_height: Height of the image. Default set to 128
+        :param crop_height:
+        :param crop_width:
+        :param is_random_crop:
+        :param is_mirror:
+        :param is_gray:
+        """
         super(Dataset, self).__init__()
         self.dataset_type = dataset_type
         self.root_path = root_path
@@ -88,8 +93,7 @@ class Dataset(data.Dataset):
             self.image_filenames = get_list_filenames(root_path)
 
             self.input_transform = transforms.Compose([
-                # transforms.RandomSizedCrop(224),
-                # transforms.RandomHorizontalFlip(),
+
                 transforms.Resize([self.input_height, self.input_height]),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -99,7 +103,6 @@ class Dataset(data.Dataset):
             indice = list(range(0, 5000))
             try_sampler = data.SubsetRandomSampler(indice)
 
-
     def __getitem__(self, index):
         if self.dataset_type is 'celeba':
             img = load_image(join(self.root_path, self.image_filenames[index]),
@@ -108,10 +111,8 @@ class Dataset(data.Dataset):
 
             img = self.input_transform(img)
 
-
     def __len__(self):
         return len(self.image_filenames)
-
 
 
 if __name__ == '__main__':

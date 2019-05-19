@@ -8,12 +8,15 @@ import numpy as np
 from scipy.stats import entropy
 import os
 from matplotlib import pyplot as plt
+
 this_root = os.path.abspath(os.path.dirname(__file__))
+
 
 def show(img):
     npimg = img.detach().numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)), interpolation='nearest')
     plt.show()
+
 
 class IgnoreLabelDataset(torch.utils.data.Dataset):
     def __init__(self, orig):
@@ -27,13 +30,15 @@ class IgnoreLabelDataset(torch.utils.data.Dataset):
 
 
 def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
-    """Computes the inception score of the generated images imgs
-
-    imgs -- Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
-    cuda -- whether or not to run on GPU
-    batch_size -- batch size for feeding into Inception v3
-    splits -- number of splits
     """
+
+    :param imgs: Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
+    :param cuda: Boolean whether or not to run on GPU
+    :param batch_size: batch size for feeding into Inception v3
+    :param splits: number of splits
+    :return: The mean and the variance of the Inception score
+    """
+
     N = len(imgs)
 
     assert batch_size > 0
@@ -75,7 +80,6 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         preds[i * batch_size:i * batch_size + batch_size_i] = get_pred(batchv)
         print(f'{batch_size + i * batch_size} evaluated samples')
 
-
     # Now compute the mean kl-div
     split_scores = []
 
@@ -92,6 +96,11 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
 
 
 def load_fake_data(path_to_fake):
+    """
+    Temp function to test the inception score
+    :param path_to_fake: Path to a dataset
+    :return: A data loader object of the dataset
+    """
 
     if os.path.isdir(path_to_fake):
         dataset = []
@@ -106,20 +115,5 @@ def load_fake_data(path_to_fake):
         return torch.load(os.path.join(path_to_fake))
 
 
-
-
 if __name__ == '__main__':
-    path_to_fake = '1000_fake_tensor_cifar_10'
-
-    dataset = load_fake_data(path_to_fake)
-
-
-    show(dataset[5])
-
-    print("Calculating Inception Score... With Mean score and Std value")
-
-    print(inception_score(dataset,
-                          cuda=False,
-                          batch_size=32,
-                          resize=True,
-                          splits=10))
+    pass

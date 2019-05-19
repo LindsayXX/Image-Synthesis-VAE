@@ -1,12 +1,6 @@
 from tqdm import tqdm
-
-import torch
-import torchvision
-from torchvision import transforms, datasets
 import torch.optim as optim
-import torch.utils.data as data
 import torch.backends.cudnn as cudnn
-import torchvision.utils as vutils
 from torch.autograd import Variable
 from age_networks import *
 from loss_functions import *
@@ -16,105 +10,11 @@ import os
 import matplotlib.pyplot as plt
 import random
 import numpy as np
-
-def load_data(dataset='celebA', root='.\data', batch_size=16, num_worker=0, imgsz=128):
-    os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
-
-    root_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-    if not os.path.exists(f'age_model_{dataset}'):
-        os.mkdir(f'age_model_{dataset}')
-    if not os.path.exists(f'age_plot_{dataset}'):
-        os.mkdir(f'age_plot_{dataset}')
-    model_dir = os.path.join(root_dir, f'age_model_{dataset}')
-    plot_dir = os.path.join(root_dir, f'age_plot_{dataset}')
-
-    if dataset == 'cifar':
-        transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        trainset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-        # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-        # trainset.data = trainset.data[np.where(np.array(trainset.targets)==1)] # Only cars
-        # indice = list(range(0, 10000))
-        # sampler=data.SubsetRandomSampler(indice)
-        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
-                                      drop_last=True)
-        # testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-        # testset_sub = torch.utils.data.SubsetRandomSampler(indice)
-        # testloader = data.DataLoader(testset, batch_size=64, shuffle=False, num_workers=2)
-
-    if dataset == 'SVHN':
-        transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        trainset = torchvision.datasets.SVHN(root='.\data', transform=transform, download=True)
-        trainloader = data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_worker, pin_memory=True,
-                                      drop_last=True)
-
-    if dataset == 'celebA':
-        transform = transforms.Compose([
-            # transforms.RandomSizedCrop(224),
-            # transforms.RandomHorizontalFlip(),
-            transforms.Resize([imgsz, imgsz]),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])])
-
-        db = datasets.ImageFolder(root, transform=transform)
-        #train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
-        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=num_worker, drop_last=True)
-
-    if dataset == 'celebAtest':
-        transform = transforms.Compose([
-            # transforms.RandomSizedCrop(224),
-            # transforms.RandomHorizontalFlip(),
-            transforms.Resize([imgsz, imgsz]),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])])
-
-        db = datasets.ImageFolder(root, transform=transform)
-        indice = list(range(0, 200))
-        try_sampler = data.SubsetRandomSampler(indice)
-        # train_sampler = data.SubsetRandomSampler(list(range(0, 29000)))
-        trainloader = data.DataLoader(db, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=num_worker,
-                                      drop_last=True, sampler=try_sampler)
-
-    print(f'finish loading {dataset} data!')
-
-    return trainloader, model_dir, plot_dir
+import constants as c
 
 if __name__ == '__main__':
-    cudnn.benchmark = True
     random.seed(123)
-    #REC_LAMBDA = 1000
-    #REC_MU = 10
-    LR = 0.0002
-    # settings for cifar
-    '''
-    NUM_EPOCH = 150
-    Z_DIM = 128
-    DROP_LR = 40
-    batch_size = 64
-    IM_DIM = 32
-    G_UPDATES = 2
-    save_model = 15
-    SAMPLE_BATCH = 64
-    '''
-
-    # setting for celebA
-    NUM_EPOCH = 100#
-    REC_LAMBDA = 1000
-    REC_MU = 10
-    Z_DIM = 64
-    DROP_LR = 50#50
-    batch_size = 8
-    IM_DIM = 128
-    G_UPDATES = 3
-    save_model = 10
-    SAMPLE_BATCH = 16
-
-    START_EPOCH = 2
-    LOAD_MODEL = True
-
+    cudnn = c.CUDA_BECHMARK
     if torch.cuda.is_available():
         device = torch.device('cuda:0')
         print(f'Cuda available: {torch.cuda.is_available()}')
@@ -125,7 +25,6 @@ if __name__ == '__main__':
         print(f'Used device: {device}')
         ngpu = torch.cuda.device_count()
         root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
-        # trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0, imgsz=IM_DIM)
         trainloader, model_dir, plot_dir = load_data('celebA', root=root, batch_size=batch_size, num_worker=0,
                                                      imgsz=IM_DIM)
 
@@ -133,24 +32,20 @@ if __name__ == '__main__':
         device = torch.device('cpu')
         print(f'Used device: {device}')
         ngpu = 0
-        root = 'D:\MY1\DPDS\project\DD2424-Projekt\data'
-        # root = 'C:/Users/Alexander/Desktop/Skolgrejs/deep/project/DD2424-Projekt/data/'
+        root = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../data/'
         trainloader, model_dir, plot_dir = load_data('celebAtest', root=root, batch_size=batch_size, num_worker=0,
                                                      imgsz=IM_DIM)
-
 
     age_E = age_enc(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
     age_G = age_gen(z_dim=Z_DIM, ngpu=ngpu, im_dim=IM_DIM).to(device)
 
-    x = torch.FloatTensor(batch_size, 3, IM_DIM, IM_DIM).to(device)
-    z_sample = torch.FloatTensor(batch_size, Z_DIM, 1, 1).to(device)
+    x = torch.FloatTensor(c.AGE_BATCH_SIZE, 3, c.IM_DIM, c.IM_DIM).to(device)
+    z_sample = torch.FloatTensor(c.AGE_BATCH_SIZE, c.Z_DIM, 1, 1).to(device)
     x = Variable(x)
     z_sample = Variable(z_sample)
 
     KL_min = KL_Loss_AGE(minimize=True)
     KL_max = KL_Loss_AGE(minimize=False)
-    #loss_l1 = nn.L1Loss()
-    #loss_l2 = nn.MSELoss()
 
     age_optim_E = optim.Adam(age_E.parameters(), lr=LR, betas=(0.5, 0.999))
     age_optim_G = optim.Adam(age_G.parameters(), lr=LR, betas=(0.5, 0.999))
@@ -165,7 +60,6 @@ if __name__ == '__main__':
         age_G.load_state_dict(checkpoint_G['state_dict'])
         age_optim_E.load_state_dict(checkpoint_E['optimizer'])
         age_optim_G.load_state_dict(checkpoint_G['optimizer'])
-
 
     enc_z = []
     enc_fake_z = []
@@ -188,7 +82,7 @@ if __name__ == '__main__':
         for i, data in enumerate(trainloader, 0):
             input, label = data
             x.data.copy_(input)
-            #batch_size = list(x.size())[0]
+
             # Update encoder
             loss_E = []
             age_optim_E.zero_grad()
@@ -215,7 +109,7 @@ if __name__ == '__main__':
 
             if i == 0:
                 print('--------------------------------')
-                print(f'Epoch: {epoch+1}, Batch: {i+1}')
+                print(f'Epoch: {epoch + 1}, Batch: {i + 1}')
                 print(f'Encoder: KL z: {KL_z}, Rec x loss: {x_rec_loss}, KL fake z: {KL_z_fake}')
 
             # Update generator
@@ -243,8 +137,7 @@ if __name__ == '__main__':
             # Clear GPU ??????
             if epoch == 0 and i == 0:
                 torch.cuda.empty_cache()
-            #torch.cuda.empty_cache()
-            ########
+
 
         if epoch % save_model == (save_model - 1):
             age_im_gen(age_G, SAMPLE_BATCH, Z_DIM, device, f'{model_dir}/_img_{epoch}.png')
@@ -300,5 +193,3 @@ if __name__ == '__main__':
     plt.legend()
     plt.savefig(f"{plot_dir}/generator_rec")
     plt.close()
-
-
