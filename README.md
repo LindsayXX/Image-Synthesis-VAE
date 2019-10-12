@@ -1,7 +1,10 @@
 # Image Synthesis Using Variational Autoencoders with Adversarial Learning
 
 ## Reproduction & comparison study
-In this project, we analyze the adversarial generator encoder ([AGE](https://arxiv.org/pdf/1807.06358.pdf)) and the introspective autoencoder ([IntroVAE](https://arxiv.org/pdf/1807.06358.pdf)). Here is the structure and training flow of 1)VAE, 2)AGE, and 3)IntroVAE:
+In this project, we analyze the adversarial generator encoder ([AGE](https://arxiv.org/pdf/1807.06358.pdf)) and the introspective autoencoder ([IntroVAE](https://arxiv.org/pdf/1807.06358.pdf)). 
+
+Here is the structure and training flow of 1)VAE, 2)AGE, and 3)IntroVAE:
+<img width="561" alt="structure" src="https://user-images.githubusercontent.com/37233460/66704951-2e6b5300-ed21-11e9-9cee-6cadbd7ecae9.png">
 
 And the detailed network architecture for encoding images of 128\*128 resolution in IntroVAE(top) and AGE(bottom).
 
