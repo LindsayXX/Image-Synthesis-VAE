@@ -23,6 +23,8 @@ Here are some examples of our results:
 
 <img width="535" alt="cifar10" src="https://user-images.githubusercontent.com/37233460/66704979-899d4580-ed21-11e9-8c01-4a9aafe51267.png">
 
+<img width="320" alt="celebA" src="https://user-images.githubusercontent.com/37233460/66704994-b7828a00-ed21-11e9-8669-3c4c8c0eaf9f.png">
+
 
 
 ### Useful link:
