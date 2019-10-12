@@ -7,6 +7,7 @@ Here is the structure and training flow of 1)VAE, 2)AGE, and 3)IntroVAE:
 <img width="561" alt="structure" src="https://user-images.githubusercontent.com/37233460/66704951-2e6b5300-ed21-11e9-9cee-6cadbd7ecae9.png">
 
 And the detailed network architecture for encoding images of 128\*128 resolution in IntroVAE(top) and AGE(bottom).
+<img width="543" alt="arch" src="https://user-images.githubusercontent.com/37233460/66704971-670b2c80-ed21-11e9-9937-0edb50aef6b6.png">
 
 We implement the models from scratch and apply them to CIFAR-10 and CelebA image datasets for unconditional image generation and reconstruction tasks. For CIFAR-10, we evaluate AGE quantitatively and our model reaches an Inception score of 2.90. AGE does not converge on the higher resolution dataset CelebA, whereas IntroVAE reaches stable training but suffer from blurriness and sometimes mode collapse.
 
