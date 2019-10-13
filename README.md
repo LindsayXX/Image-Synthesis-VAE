@@ -15,15 +15,22 @@ We implement the models from scratch and apply them to CIFAR-10 and CelebA image
 
 ## Requirment
 Python 3.6
+
 pytorch>=1.1.0
+
 numpy>=1.14.0
+
 matplotlib>=2.1.2
+
 tqdm>=4.31.1
 
 ## Run
 trian AGE: AGE/age_training.py
+
 train IntroVAE: IntroVAE/introvae_training.py
+
 the vae_training.py can be used for finding hyperparameters
+
 
 ## Result
 
@@ -38,5 +45,6 @@ Here are some examples of our results:
 
 ### Useful link:
 original repository of [AGE](https://github.com/DmitryUlyanov/AGE) and [IntroVAE](https://github.com/hhb072/IntroVAE)
-[Our project report]
+
+[Our project report]()
 
